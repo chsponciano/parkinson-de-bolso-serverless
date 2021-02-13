@@ -1,0 +1,10 @@
+{
+	"deployment": {
+		"region": "sa-east-1",
+		"serviceName": "serverless-parkinson-de-bolso",
+		"pathApi": "api",
+		"userPoolName": "parkinson-de-bolso-user-pool",
+		"clientName": "administrator",
+		"bucketName": "parkinson-de-bolso-bucket"
+	}
+}

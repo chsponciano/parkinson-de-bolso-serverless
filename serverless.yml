@@ -1,0 +1,246 @@
+service: ${file(./config.json):deployment.serviceName}
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: ${file(./config.json):deployment.region}
+  timeout: 60
+  environment:
+      BUCKET_NAME: ${file(./config.json):deployment.bucketName}
+      PATIENT_TABLE: ${self:service}-patients
+      PATIENT_CLASSIFICATION_TABLE: ${self:service}-patients-classifications
+      ACTIVE_CLASSIFICATION_TABLE: ${self:service}-actives-classifications
+      EXECUTATION_CLASSIFICATION_TABLE: ${self:service}-executations-classifications
+  iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: 'arn:aws:s3:::${self:provider.environment.BUCKET_NAME}/*'
+      - Effect: Allow
+        Action:
+            - dynamodb:*
+        Resource: '*'
+
+resources:
+  Resources:
+    CognitoUserPool:
+      Type: "AWS::Cognito::UserPool"
+      Properties:
+        MfaConfiguration: OFF
+        UserPoolName: ${file(./config.json):deployment.userPoolName}
+        UsernameAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: True
+            RequireNumbers: True
+            RequireSymbols: False
+            RequireUppercase: True
+
+    CognitoUserPoolClient:
+      Type: "AWS::Cognito::UserPoolClient"
+      Properties:
+        ClientName: ${file(./config.json):deployment.clientName}
+        GenerateSecret: False
+        UserPoolId:
+          Ref: CognitoUserPool
+
+    ApiGatewayAuthorizer:
+      DependsOn:
+        - ApiGatewayRestApi
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: cognito-authorizer
+        IdentitySource: method.request.header.Authorization
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        Type: COGNITO_USER_POOLS
+        ProviderARNs:
+          - Fn::GetAtt: [CognitoUserPool, Arn]
+
+    ParkinsoDeBolsoBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+          BucketName: ${self:provider.environment.BUCKET_NAME}
+
+    PatientTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.PATIENT_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+    PatientClassifictionTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.PATIENT_CLASSIFICATION_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+    ActiveClassifictionTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.ACTIVE_CLASSIFICATION_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+    ExecutationClassifictionTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.EXECUTATION_CLASSIFICATION_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5    
+
+functions:
+  PatientGet:
+    handler: handlers/patient.get
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/patient/{id}
+          method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+
+  PatientGetAll:
+    handler: handlers/patient.get_all
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/patient
+          method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+          
+  PatientCreate:
+    handler: handlers/patient.create
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/patient
+          method: post
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+          
+  PatientPut:
+    handler: handlers/patient.put
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/patient/{id}
+          method: put
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+          
+  PatientDelete:
+    handler: handlers/patient.delete
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/patient/{id}
+          method: delete
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+
+  PatientClassificationGetAll:
+    handler: handlers/patient_classification.get_all
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/patientClassification
+          method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+          
+  PatientClassificationDelete:
+    handler: handlers/patient_classification.delete
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/patient_classification/{id}
+          method: delete
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+
+  PredictInitialize:
+    handler: handlers/predict.initialize
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/predict
+          method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+
+  PredictEvaluator:
+    handler: handlers/predict.evaluator
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/predict
+          method: post
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+
+  PredictConclude:
+    handler: handlers/predict.conclude
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/predict
+          method: delete
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
