@@ -14,10 +14,7 @@ provider:
   iamRoleStatements:
       - Effect: Allow
         Action:
-          - s3:PutObject
-        Resource: 'arn:aws:s3:::${self:provider.environment.BUCKET_NAME}/*'
-      - Effect: Allow
-        Action:
+            - s3:*
             - dynamodb:*
         Resource: '*'
 
@@ -141,7 +138,7 @@ functions:
     handler: handlers/patient.get_all
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/patient
+          path: ${file(./config.json):deployment.pathApi}/patient/userid/{userid}
           method: get
           cors: true
           authorizer:
@@ -189,7 +186,7 @@ functions:
     handler: handlers/patient_classification.get_all
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/patientClassification
+          path: ${file(./config.json):deployment.pathApi}/patientClassification/patientid/{patientid}
           method: get
           cors: true
           authorizer:
@@ -244,3 +241,6 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId:
               Ref: ApiGatewayAuthorizer
+  
+  AutoConfirm:
+    handler: handlers/auto_confirm.confirm
