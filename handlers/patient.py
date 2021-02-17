@@ -1,7 +1,6 @@
 import json
 import os
 import time
-import logging
 import uuid
 import boto3
 import base64

@@ -186,7 +186,7 @@ functions:
     handler: handlers/patient_classification.get_all
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/patientClassification/patientid/{patientid}
+          path: ${file(./config.json):deployment.pathApi}/patient_classification/patientid/{patientid}
           method: get
           cors: true
           authorizer:
@@ -210,7 +210,7 @@ functions:
     handler: handlers/predict.initialize
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/predict
+          path: ${file(./config.json):deployment.pathApi}/predict/{patientid}
           method: get
           cors: true
           authorizer:
@@ -234,7 +234,7 @@ functions:
     handler: handlers/predict.conclude
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/predict
+          path: ${file(./config.json):deployment.pathApi}/predict/{patientid}
           method: delete
           cors: true
           authorizer:
@@ -244,3 +244,15 @@ functions:
   
   AutoConfirm:
     handler: handlers/auto_confirm.confirm
+
+  ClearData:
+    handler: handlers/privacy.clean_data
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/privacy/{userid}
+          method: delete
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
