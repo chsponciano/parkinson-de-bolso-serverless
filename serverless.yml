@@ -9,7 +9,6 @@ provider:
       BUCKET_NAME: ${file(./config.json):deployment.bucketName}
       PATIENT_TABLE: ${self:service}-patients
       PATIENT_CLASSIFICATION_TABLE: ${self:service}-patients-classifications
-      ACTIVE_CLASSIFICATION_TABLE: ${self:service}-actives-classifications
       EXECUTATION_CLASSIFICATION_TABLE: ${self:service}-executations-classifications
   iamRoleStatements:
       - Effect: Allow
@@ -81,21 +80,6 @@ resources:
       DeletionPolicy: Retain
       Properties:
         TableName: ${self:provider.environment.PATIENT_CLASSIFICATION_TABLE}
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 5
-          WriteCapacityUnits: 5
-
-    ActiveClassifictionTable:
-      Type: AWS::DynamoDB::Table
-      DeletionPolicy: Retain
-      Properties:
-        TableName: ${self:provider.environment.ACTIVE_CLASSIFICATION_TABLE}
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -205,13 +189,13 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId:
               Ref: ApiGatewayAuthorizer
-
-  PredictInitialize:
-    handler: handlers/predict.initialize
+          
+  PatientClassificationCreate:
+    handler: handlers/patient_classification.create
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/predict/{patientid}
-          method: get
+          path: ${file(./config.json):deployment.pathApi}/patient_classification
+          method: post
           cors: true
           authorizer:
             type: COGNITO_USER_POOLS
