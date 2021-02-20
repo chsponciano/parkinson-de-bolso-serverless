@@ -6,15 +6,15 @@ from handlers import patient, patient_classification
 
 def clean_data(event, context):
     _patients = json.loads(patient.get_all(event, context)['body'])
-    for p in _patients:
-        event['pathParameters']['patientid'] = p['id']
+    for _patient in _patients:
+        event['pathParameters']['patientid'] = _patient['id']
         
-        _classification = json.loads(patient_classification.get_all(event, context)['body'])
-        for c in _classification:
-            event['pathParameters']['id'] = c['id']
+        _classifications = json.loads(patient_classification.get_all(event, context)['body'])
+        for _classification in _classifications:
+            event['pathParameters']['id'] = _classification['id']
             patient_classification.delete(event, context)
 
-        event['pathParameters']['id'] = p['id']
+        event['pathParameters']['id'] = _patient['id']
         patient.delete(event, context)
     
     return {

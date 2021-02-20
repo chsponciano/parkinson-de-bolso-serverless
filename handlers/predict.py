@@ -2,11 +2,11 @@ import json
 import os
 import time
 import uuid
-import base64
 import random
 import boto3
 
 from boto3.dynamodb.conditions import Attr
+from util import file_control
 
 
 dynamodb = boto3.resource('dynamodb')
@@ -20,7 +20,7 @@ def evaluator(event, context):
     _executation['updatedAt'] = _timestamp
 
     # start of implementation
-    _executation_image = base64.b64decode(_executation['image']['data'])
+    _executation_image = file_control.to_byte(_executation['image']['data'])
     del _executation['image']
 
     # temporary random value until model creation
