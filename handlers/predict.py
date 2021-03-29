@@ -20,7 +20,7 @@ def evaluator(event, context):
     _executation['updatedAt'] = _timestamp
 
     # start of implementation
-    _executation_image = file_control.to_byte(_executation['image']['data'])
+    file_control.add_test_image(_executation['image'])
     del _executation['image']
 
     # temporary random value until model creation

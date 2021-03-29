@@ -21,3 +21,4 @@ var/
 
 # VSCode directories
 .vscode
+node_modules/

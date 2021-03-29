@@ -15,6 +15,12 @@ def add(file_data: dict):
     _assign_public_reading(_filename)
     return _get_url(_filename)
 
+def add_test_image(file_data: dict, path='dataCollectedTesting/'):
+    _filename = path + get_uuid_name(file_data['filename'])
+    _object = _s3_resource.Object(_bucket, _filename)
+    _object.put(Body=to_byte(file_data['data']))
+    _assign_public_reading(_filename)
+
 def delete(filename: str):
     _filename = filename.split('/')[-1]
     _s3_resource.Object(_bucket, _filename).delete()
