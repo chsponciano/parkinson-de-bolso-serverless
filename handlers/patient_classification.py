@@ -17,12 +17,12 @@ class PatientClassificationModel:
         self.date = data['date']
         
 def get_all(event, context):
-    _patiensClassifications = table.scan(
+    _patientsClassifications = table.scan(
         FilterExpression=Attr('patientid').eq(event['pathParameters']['patientid'])
     )
     return {
         'statusCode': 200,
-        'body': json.dumps(_patiensClassifications['Items'], cls=DecimalEncoder)
+        'body': json.dumps(_patientsClassifications['Items'], cls=DecimalEncoder)
     }
 
 def delete(event, context):
@@ -36,11 +36,33 @@ def delete(event, context):
     }
 
 def create(event, context):    
-    _patiensClassifications = PatientClassificationModel(json.loads(event['body'])).__dict__
-    _patiensClassifications['id'] = str(uuid.uuid1())
-    table.put_item(Item=_patiensClassifications)
+    _patientsClassifications = PatientClassificationModel(json.loads(event['body'])).__dict__
+    _patientsClassifications['id'] = str(uuid.uuid1())
+    _patientsClassifications['percentage'] = _group_daily_data(_patientsClassifications)
+    table.put_item(Item=_patientsClassifications)
 
     return {
         'statusCode': 200,
-        'body': json.dumps(_patiensClassifications)
+        'body': json.dumps(_patientsClassifications)
     }
+
+def _group_daily_data(patientsClassification):
+    _percentage = float(patientsClassification['percentage'])
+    _classifications = table.scan(
+        FilterExpression=Attr('patientid').eq(patientsClassification['patientid']) & Attr('date').eq(patientsClassification['date'])
+    )['Items']
+
+    if len(_classifications) == 0:
+        return int(_percentage)
+    
+    for c in _classifications:
+        _percentage += float(c['percentage'])
+        table.delete_item(
+            Key={
+                'id': c['id']
+            }
+        )
+
+    _percentage /= len(_classifications) + 1
+
+    return int(_percentage)

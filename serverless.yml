@@ -10,11 +10,14 @@ provider:
       PATIENT_TABLE: ${self:service}-patients
       PATIENT_CLASSIFICATION_TABLE: ${self:service}-patients-classifications
       EXECUTATION_CLASSIFICATION_TABLE: ${self:service}-executations-classifications
+      APPLICATION_EMAIL: ${file(./config.json):deployment.applicationEmail
+      DEV_EMAIL: ${file(./config.json):deployment.devEmail
   iamRoleStatements:
       - Effect: Allow
         Action:
             - s3:*
             - dynamodb:*
+            - ses:SendEmail
         Resource: '*'
 
 resources:
@@ -240,3 +243,16 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId:
               Ref: ApiGatewayAuthorizer
+
+  SendComment:
+    handler: handlers/notify.send_comment
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/comment
+          method: post
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+    
