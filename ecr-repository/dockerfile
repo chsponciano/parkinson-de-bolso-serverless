@@ -2,7 +2,7 @@ FROM python:3.6.7-alpine3.6
 LABEL pocket parkinso service <parkinsondebolso@gmail.com>
 COPY . /opt
 WORKDIR /opt
-RUN pip install -r requirement.txt
+RUN pip install -r requirements.txt
 ADD https://parkinson-de-bolso-bucket.s3-sa-east-1.amazonaws.com/models/mask-rcnn-coco-model.h5 /opt/models/mask-rcnn-coco-model.h5
 ADD https://parkinson-de-bolso-bucket.s3-sa-east-1.amazonaws.com/models/pocket-parkinson-model.hdf5 /opt/models/pocket-parkinson-model.hdf5
 CMD ["nameko run service"]
