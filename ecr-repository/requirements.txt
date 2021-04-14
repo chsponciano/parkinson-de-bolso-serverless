@@ -9,7 +9,7 @@ decorator==4.4.2
 dnspython==1.16.0
 eventlet==0.30.2
 greenlet==1.0.0
-h5py==3.2.1
+h5py
 idna==2.10
 imageio==2.9.0
 imantics==0.1.12
