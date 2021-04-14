@@ -1,4 +1,4 @@
-FROM python:3.6.7-alpine3.6
+FROM tensorflow/tensorflow:1.13.1-gpu-py3
 LABEL pocket parkinso service <parkinsondebolso@gmail.com>
 COPY . /opt
 WORKDIR /opt
