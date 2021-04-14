@@ -70,7 +70,7 @@ class PredictionService:
     def handle_message(self, body):
         try:
             _file_path = create_tmp_image(body['image'])
-            _predict = _model.predict(self._convert_image(_file_path))[0]
+            _predict = self._model.predict(self._convert_image(_file_path))[0]
             return json.dumps({
                 'status': '200',
                 'percentage': {
