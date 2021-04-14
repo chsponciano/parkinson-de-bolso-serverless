@@ -1,0 +1,13 @@
+service: pocket-parkison-layers-opencv
+
+provider:
+  name: aws
+  runtime: python3.6
+  region: sa-east-1
+
+layers:
+  python-app-dependencies:
+    path: tools
+    compatibleRuntimes:
+      - python3.6
+    description: "Pocket parkinson's opencv dependencies"

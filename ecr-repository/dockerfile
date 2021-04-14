@@ -1,0 +1,7 @@
+FROM python:3.6.7-alpine3.6
+LABEL pocket parkinso service <parkinsondebolso@gmail.com>
+RUN apt-get update; apt-get clean
+COPY . /app
+WORKDIR /app
+RUN pip install -r requirement.txt
+CMD ["nameko run service"]

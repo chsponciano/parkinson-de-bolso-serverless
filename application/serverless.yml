@@ -255,4 +255,17 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId:
               Ref: ApiGatewayAuthorizer
+
+  ImageProcessing:
+    handler: handlers/image_processing.execute
+    layers:
+      - arn:aws:lambda:sa-east-1:206354660150:layer:python-app-dependencies:2
+
+  ModelPrediction:
+    handler: handlers/model_processing.predict
+    layers:
+      - arn:aws:lambda:sa-east-1:206354660150:layer:python-app-dependencies:1
+
+  Segmentation:
+    handler: handlers/segmentation.execute
     
