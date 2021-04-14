@@ -1,7 +1,9 @@
 FROM python:3.6.7-alpine3.6
 LABEL pocket parkinso service <parkinsondebolso@gmail.com>
 RUN apt-get update; apt-get clean
-COPY . /app
-WORKDIR /app
+COPY . /root
+ADD https://parkinson-de-bolso-bucket.s3-sa-east-1.amazonaws.com/models/mask-rcnn-coco-model.h5 /root/models/mask-rcnn-coco-model.h5
+ADD https://parkinson-de-bolso-bucket.s3-sa-east-1.amazonaws.com/models/pocket-parkinson-model.hdf5 /root/models/pocket-parkinson-model.hdf5
+WORKDIR /root
 RUN pip install -r requirement.txt
 CMD ["nameko run service"]
