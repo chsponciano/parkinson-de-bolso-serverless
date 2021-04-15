@@ -8,6 +8,8 @@ load_dotenv()
 from file_utils import clear_tmp, create_tmp_image, to_byte_str
 from pixellib.instance import instance_segmentation
 from keras.models import load_model
+from keras import backend
+backend.set_image_data_format("channels_last")
 from sqs_utils import SQSConsumer
 from PIL import Image
 
