@@ -16,8 +16,10 @@ class SegmentationService:
 
     def __init__(self):    
         print('Starting the segmentation server')
+        _path_model = os.path.join(os.getcwd(), os.environ.get('SEGMENTATION_MODEL'))
+        print(f'Model: {_path_model')
         self._segmentation = instance_segmentation()
-        self._segmentation.load_model(os.path.join(os.getcwd(), os.environ.get('SEGMENTATION_MODEL')))
+        self._segmentation.load_model(_path_model)
         self._target_classes = self._segmentation.select_target_classes(person=True)
         print('Initialized the segmentation server')
 
