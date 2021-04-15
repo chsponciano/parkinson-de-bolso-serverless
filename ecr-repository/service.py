@@ -1,24 +1,25 @@
 import os
+import skimage.io
+import cv2
 
 from dotenv import load_dotenv
 load_dotenv()
 
 from file_utils import clear_tmp, create_tmp_image, to_byte_str
-from sqs_utils import SQSConsumer
-
 from pixellib.instance import instance_segmentation
-import skimage.io
-import cv2
+from keras.models import load_model
+from sqs_utils import SQSConsumer
+from PIL import Image
 
 class SegmentationService:
-    name = os.environ.get('SEGMENTATION_SERVICE')
+    name = 'SegmentationService'
 
     def __init__(self):    
         self._segmentation = instance_segmentation()
         self._segmentation.load_model(os.path.join(os.getcwd(), os.environ.get('SEGMENTATION_MODEL')))
         self._target_classes = self._segmentation.select_target_classes(person=True)
 
-    @SQSConsumer(os.environ.get('SEGMENTATION_QUEUE'))
+    @SQSConsumer('https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-segmentation-queue.fifo')
     def handle_message(self, body):
         try:
             _file_path = create_tmp_image(body['image'])
@@ -50,12 +51,8 @@ class SegmentationService:
         finally:
             clear_tmp()
 
-
-from keras.models import load_model
-from PIL import Image
-
 class PredictionService:
-    name = os.environ.get('PREDICTION_SERVICE')
+    name = 'PredictionService'
 
     def __init__(self):    
         self._model = load_model(os.path.join(os.getcwd(), os.environ.get('POCKET_PARKINSON_MODEL')))
@@ -66,7 +63,7 @@ class PredictionService:
         _image = _image.resize((150,150))
         return np.array([np.asarray(_image)]) / 255.0
 
-    @SQSConsumer(os.environ.get('PREDICTION_QUEUE'))
+    @SQSConsumer('https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-prediction-queue.fifo')
     def handle_message(self, body):
         try:
             _file_path = create_tmp_image(body['image'])

@@ -10,12 +10,11 @@ from functools import partial
 AWS_REGION = os.environ.get('AWS_REGION')
 SQS_CLIENT = boto3.client('sqs', region_name=AWS_REGION)
 
-def SQSProducer(queue_name, message):
-    _queue_url = os.environ.get(queue_name)
+def SQSProducer(queue_url, message):
     _id = uuid.uuid4().hex
 
     return SQS_CLIENT.send_message(
-        QueueUrl=_queue_url,
+        QueueUrl=queue_url,
         MessageBody=json.dumps(message),
         MessageGroupId=_id,
         MessageDeduplicationId=_id
@@ -23,8 +22,8 @@ def SQSProducer(queue_name, message):
 
 class Consumer(Entrypoint):
 
-    def __init__(self, queue_name, **kwargs):
-        self._queue_url = os.environ.get(queue_name)
+    def __init__(self, queue_url, **kwargs):
+        self._queue_url = queue_url
         super(Consumer, self).__init__(**kwargs)
 
     def start(self):
