@@ -18,10 +18,12 @@ class SegmentationService:
         self._segmentation = instance_segmentation()
         self._segmentation.load_model(os.path.join(os.getcwd(), os.environ.get('SEGMENTATION_MODEL')))
         self._target_classes = self._segmentation.select_target_classes(person=True)
+        print('starting the segmentation server')
 
     @SQSConsumer('https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-segmentation-queue.fifo')
     def handle_message(self, body):
         try:
+            print(body)
             _file_path = create_tmp_image(body['image'])
             _mask, _ = self._segmentation.segmentImage(
                 _file_path, 
@@ -56,6 +58,7 @@ class PredictionService:
 
     def __init__(self):    
         self._model = load_model(os.path.join(os.getcwd(), os.environ.get('POCKET_PARKINSON_MODEL')))
+        print('starting the predict server')
 
     def _convert_image(self, file_path):
         _image = Image.open(_file_path)
@@ -66,6 +69,7 @@ class PredictionService:
     @SQSConsumer('https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-prediction-queue.fifo')
     def handle_message(self, body):
         try:
+            print(body)
             _file_path = create_tmp_image(body['image'])
             _predict = self._model.predict(self._convert_image(_file_path))[0]
             return json.dumps({
