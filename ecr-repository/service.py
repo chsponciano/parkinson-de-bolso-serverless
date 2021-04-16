@@ -14,26 +14,26 @@ backend.set_image_data_format("channels_last")
 from sqs_utils import SQSConsumer
 from PIL import Image
 
+INSTANCE_SEGMENTATION = instance_segmentation()
+INSTANCE_SEGMENTATION.load_model(os.environ.get('SEGMENTATION_MODEL'))
+TARGET_CLASSES = INSTANCE_SEGMENTATION.select_target_classes(person=True)
+print('====== Initialized the segmentation server ======')
+
+print('====== Starting the predict server ======')
+MODEL = load_model(os.environ.get('POCKET_PARKINSON_MODEL'))
+print('====== Initialized the predict server ======')
+
 class SegmentationService:
     name = 'SegmentationService'
-
-    def __init__(self):    
-        print('Starting the segmentation server')
-        _path_model = os.environ.get('SEGMENTATION_MODEL')
-        print(f'Model: {_path_model}')
-        self._segmentation = instance_segmentation()
-        self._segmentation.load_model(_path_model)
-        self._target_classes = self._segmentation.select_target_classes(person=True)
-        print('Initialized the segmentation server')
 
     @SQSConsumer('https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-segmentation-queue.fifo')
     def handle_message(self, body):
         try:
-            print(body)
+            print('Segmentation Queue Consume')
             _file_path = create_tmp_image(body['image'])
-            _mask, _ = self._segmentation.segmentImage(
+            _mask, _ = INSTANCE_SEGMENTATION.segmentImage(
                 _file_path, 
-                segment_target_classes=self._target_classes, 
+                segment_target_classes=TARGET_CLASSES, 
                 extract_segmented_objects=True, 
                 verbose=0
             )
@@ -52,6 +52,7 @@ class SegmentationService:
                 'segmented_img': to_byte_str(_file_path)
             })
         except Exception as e:
+            print('Segmentation Queue Consume - Error:', str(e))
             return json.dumps({
                 'status': '500',
                 'error': str(e)
@@ -63,9 +64,6 @@ class PredictionService:
     name = 'PredictionService'
 
     def __init__(self):    
-        print('Starting the predict server')
-        self._model = load_model(os.path.join(os.getcwd(), os.environ.get('POCKET_PARKINSON_MODEL')))
-        print('Initialized the predict server')
 
     def _convert_image(self, file_path):
         _image = Image.open(_file_path)
@@ -76,9 +74,9 @@ class PredictionService:
     @SQSConsumer('https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-prediction-queue.fifo')
     def handle_message(self, body):
         try:
-            print(body)
+            print('Predict Queue Consume')
             _file_path = create_tmp_image(body['image'])
-            _predict = self._model.predict(self._convert_image(_file_path))[0]
+            _predict = MODEL.predict(self._convert_image(_file_path))[0]
             return json.dumps({
                 'status': '200',
                 'percentage': {
@@ -87,6 +85,7 @@ class PredictionService:
                 }
             })
         except Exception as e:
+            print('Predict Queue Consume - Error:', str(e))
             return json.dumps({
                 'status': '500',
                 'error': str(e)
