@@ -6,34 +6,47 @@ import json
 from dotenv import load_dotenv
 load_dotenv()
 
-from file_utils import clear_tmp, create_tmp_image, to_byte_str
+from utils.file_utils import download_image, add_collection_image, delete_standby_image, delete_local_tmp_imagem
 from pixellib.instance import instance_segmentation
+
 from keras.models import load_model
 from keras import backend
-backend.set_image_data_format("channels_last")
-from sqs_utils import SQSConsumer, SQSProducer
+backend.set_image_data_format('channels_last')
+
+from utils.sqs_utils import SQSConsumer, SQSProducer
 from PIL import Image
+
+from utils.db_utils import add_to_table
 
 INSTANCE_SEGMENTATION = instance_segmentation()
 INSTANCE_SEGMENTATION.load_model(os.environ.get('SEGMENTATION_MODEL'))
 TARGET_CLASSES = INSTANCE_SEGMENTATION.select_target_classes(person=True)
-print('====== Initialized the segmentation server ======')
-
-print('====== Starting the predict server ======')
 MODEL = load_model(os.environ.get('POCKET_PARKINSON_MODEL'))
-print('====== Initialized the predict server ======')
-
-SEQMENTATION_QUEUE = 'https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-segmentation-queue.fifo'
-PREDICT_QUEUE = 'https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-prediction-queue.fifo'
+SEQMENTATION_QUEUE = os.environ.get('SEQMENTATION_QUEUE')
+PREDICT_QUEUE = os.environ.get('PREDICT_QUEUE')
+PREDICT_TABLE = os.environ.get('PREDICT_TABLE')
 
 class SegmentationService:
     name = 'SegmentationService'
 
+    def _get_silhouette(self, mask, file_path):
+        image = skimage.io.imread(file_path)
+        
+        for i in range(mask.shape[2]):
+            for j in range(image.shape[2]):
+                image[:,:,j] = image[:,:,j] * mask[:,:,i]
+        _, _segmented_img = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY)
+        return _segmented_img
+
     @SQSConsumer(SEQMENTATION_QUEUE)
     def handle_message(self, body):
         try:
-            print('Segmentation Queue Consume')
-            _file_path = create_tmp_image(body['image'])
+            print(f'Segmentation Queue Consume - Patient: {body['patientid']} - {body['index']}')
+            
+            # download s3 image
+            _file_path = download_image(body['url_image'])  
+            
+            # target person in the image
             _mask, _ = INSTANCE_SEGMENTATION.segmentImage(
                 _file_path, 
                 segment_target_classes=TARGET_CLASSES, 
@@ -41,21 +54,25 @@ class SegmentationService:
                 verbose=0
             )
 
+            # convert targeting values ​​to integer
             _mask = _mask['masks'].astype(int)
-            _tmp_img = skimage.io.imread(_file_path)
 
-            for i in range(_mask.shape[2]):
-                for j in range(_tmp_img.shape[2]):
-                    _tmp_img[:,:,j] = _tmp_img[:,:,j] * _mask[:,:,i]
+            # get silhouette of the person in the image and
+            # save the new image in the local folder
+            cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
 
-            _, _segmented_img = cv2.threshold(_tmp_img, 0, 255, cv2.THRESH_BINARY)
-            cv2.imwrite(_file_path, _segmented_img)
-            body['image']['data'] = to_byte_str(_file_path)
+            # remove s3 standby
+            delete_standby_image(body['url_image'])
+
+            # saves the segmented image on s3
+            body['url_image'] = add_collection_image(_file_path)
+
+            # posts a message to the prediction queue with the 
+            # local directory of the segmented image
+            body['local_image'] = _file_path
             SQSProducer(PREDICT_QUEUE, body)
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
-        finally:
-            clear_tmp()
 
 class PredictionService:
     name = 'PredictionService'
@@ -69,11 +86,26 @@ class PredictionService:
     @SQSConsumer(PREDICT_QUEUE)
     def handle_message(self, body):
         try:
-            print('Predict Queue Consume')
-            _file_path = create_tmp_image(body['image'])
+            print(f'Predict Queue Consume - Patient: {body['patientid']} - {body['index']}') 
+
+            # get the path of the local file
+            _file_path = body['local_image']
+
+            # predict the local image
+            # 0 - others
+            # 1 - parkinson 
             _predict = MODEL.predict(self._convert_image(_file_path))[0]
-            print(_predict)
+
+            # remove local temporary image
+            delete_local_tmp_imagem(_file_path)
+
+            # save data to the database
+            add_to_table(PREDICT_TABLE, {
+                'patientid': body['patientid'],
+                'index': body['index'],
+                'url_image': body['url_image'],
+                'percentage_others': _predict[0],
+                'percentage_parkinson': _predict[1]
+            })
         except Exception as e:
             print('Predict Queue Consume - Error:', str(e))
-        finally:
-            clear_tmp()
