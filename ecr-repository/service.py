@@ -63,8 +63,6 @@ class SegmentationService:
 class PredictionService:
     name = 'PredictionService'
 
-    def __init__(self):    
-
     def _convert_image(self, file_path):
         _image = Image.open(_file_path)
         _image = _image.convert('RGB')
