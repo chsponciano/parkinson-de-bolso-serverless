@@ -11,7 +11,7 @@ from pixellib.instance import instance_segmentation
 from keras.models import load_model
 from keras import backend
 backend.set_image_data_format("channels_last")
-from sqs_utils import SQSConsumer
+from sqs_utils import SQSConsumer, SQSProducer
 from PIL import Image
 
 INSTANCE_SEGMENTATION = instance_segmentation()
@@ -23,10 +23,13 @@ print('====== Starting the predict server ======')
 MODEL = load_model(os.environ.get('POCKET_PARKINSON_MODEL'))
 print('====== Initialized the predict server ======')
 
+SEQMENTATION_QUEUE = 'https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-segmentation-queue.fifo'
+PREDICT_QUEUE = 'https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-prediction-queue.fifo'
+
 class SegmentationService:
     name = 'SegmentationService'
 
-    @SQSConsumer('https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-segmentation-queue.fifo')
+    @SQSConsumer(SEQMENTATION_QUEUE)
     def handle_message(self, body):
         try:
             print('Segmentation Queue Consume')
@@ -47,16 +50,10 @@ class SegmentationService:
 
             _, _segmented_img = cv2.threshold(_tmp_img, 0, 255, cv2.THRESH_BINARY)
             cv2.imwrite(_file_path, _segmented_img)
-            return json.dumps({
-                'status': '200',
-                'segmented_img': to_byte_str(_file_path)
-            })
+            body['image']['data'] = to_byte_str(_file_path)
+            SQSProducer(PREDICT_QUEUE, body)
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
-            return json.dumps({
-                'status': '500',
-                'error': str(e)
-            })
         finally:
             clear_tmp()
 
@@ -69,24 +66,14 @@ class PredictionService:
         _image = _image.resize((150,150))
         return np.array([np.asarray(_image)]) / 255.0
 
-    @SQSConsumer('https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-prediction-queue.fifo')
+    @SQSConsumer(PREDICT_QUEUE)
     def handle_message(self, body):
         try:
             print('Predict Queue Consume')
             _file_path = create_tmp_image(body['image'])
             _predict = MODEL.predict(self._convert_image(_file_path))[0]
-            return json.dumps({
-                'status': '200',
-                'percentage': {
-                    'others': _predict[0],
-                    'parkinson': _predict[1]
-                }
-            })
+            print(_predict)
         except Exception as e:
             print('Predict Queue Consume - Error:', str(e))
-            return json.dumps({
-                'status': '500',
-                'error': str(e)
-            })
         finally:
             clear_tmp()
