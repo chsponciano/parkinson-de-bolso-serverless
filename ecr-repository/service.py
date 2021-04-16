@@ -104,8 +104,8 @@ class PredictionService:
                 'patientid': body['patientid'],
                 'index': body['index'],
                 'url_image': body['url_image'],
-                'percentage_others': _predict[0],
-                'percentage_parkinson': _predict[1]
+                'percentage_others': str(_predict[0] * 100),
+                'percentage_parkinson': str(_predict[1] * 100)
             })
         except Exception as e:
             print('Predict Queue Consume - Error:', str(e))
