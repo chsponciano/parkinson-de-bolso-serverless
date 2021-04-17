@@ -33,7 +33,7 @@ class Consumer(Entrypoint):
         while True:
             _response = SQS_CLIENT.receive_message(
                 QueueUrl=self._queue_url,
-                WaitTimeSeconds=5,
+                WaitTimeSeconds=15,
             )
 
             for message in _response.get('Messages', ()):
