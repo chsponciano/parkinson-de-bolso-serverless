@@ -13,7 +13,6 @@ from pixellib.instance import instance_segmentation
 from keras.models import load_model
 import keras.backend as K
 K.set_image_data_format('channels_last')
-K.clear_session()
 
 from utils.sqs_utils import SQSConsumer, SQSProducer
 from PIL import Image
@@ -48,13 +47,14 @@ class SegmentationService:
             
             # download s3 image
             _file_path = download_image(body['url_image'])  
+
+            print(_file_path)
             
             # target person in the image
             _mask, _ = INSTANCE_SEGMENTATION.segmentImage(
                 _file_path, 
                 segment_target_classes=TARGET_CLASSES, 
-                extract_segmented_objects=True, 
-                verbose=1
+                extract_segmented_objects=True
             )
 
             # convert targeting values ​​to integer
