@@ -78,6 +78,7 @@ class SegmentationService:
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
             print(traceback.format_exc())
+        return body
 
 class PredictionService:
     name = 'PredictionService'
@@ -125,6 +126,8 @@ class PredictionService:
                 'isParkinson': _isParkinson,
                 'percentage': _porcentage
             })
+            
         except Exception as e:
             print('Predict Queue Consume - Error:', str(e))
             print(traceback.format_exc())
+        return body
