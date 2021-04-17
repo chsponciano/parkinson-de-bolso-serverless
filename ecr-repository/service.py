@@ -4,7 +4,7 @@ import cv2
 import math
 import json
 import traceback
-import _thread
+import threading
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -30,8 +30,10 @@ SEQMENTATION_QUEUE = os.environ.get('SEQMENTATION_QUEUE')
 PREDICT_QUEUE = os.environ.get('PREDICT_QUEUE')
 PREDICT_TABLE = os.environ.get('PREDICT_TABLE')
 
-class SegmentationService:
-    name = 'SegmentationService'
+class SegmentationParallel(threading.Thread):
+	def __init__(self, body):
+		threading.Thread.__init__(self)
+        self.body = body
 
     def _get_silhouette(self, mask, file_path):
         image = skimage.io.imread(file_path)
@@ -41,10 +43,10 @@ class SegmentationService:
                 image[:,:,j] = image[:,:,j] * mask[:,:,i]
         _, _segmented_img = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY)
         return _segmented_img
-
-    def run(self, url):
+    
+    def run(self):
         # download s3 image
-        _file_path = download_image(url)  
+        _file_path = download_image(self.body['url_image'])  
 
         # target person in the image
         INSTANCE_SEGMENTATION.load_model(SEGMENTATION_MODEL)
@@ -74,13 +76,15 @@ class SegmentationService:
         #     body['local_image'] = _file_path
         #     SQSProducer(PREDICT_QUEUE, body)
 
+class SegmentationService:
+    name = 'SegmentationService'
 
     @SQSConsumer(SEQMENTATION_QUEUE)
     def handle_message(self, body):
         try:
             body = json.loads(body)
             print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
-            _thread.start_new_thread(self.run, (body['url_image']))         
+            SegmentationParallel(body).start()           
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
             print(traceback.format_exc())
