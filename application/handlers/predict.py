@@ -9,47 +9,65 @@ from boto3.dynamodb.conditions import Attr
 from util import file_control
 
 
+sqs = boto3.client('sqs')
 dynamodb = boto3.resource('dynamodb')
 executation_classification_table = dynamodb.Table(os.environ['EXECUTATION_CLASSIFICATION_TABLE'])
 
-def evaluator(event, context):
-    _timestamp = str(time.time())
-    _executation = json.loads(event['body'])
-    _executation['id'] = str(uuid.uuid1())
-    _executation['createdAt'] = _timestamp
-    _executation['updatedAt'] = _timestamp
+def _get_percentages(predict_id):
+    _executations = executation_classification_table.scan(
+        FilterExpression=Attr('predictid').eq(predict_id)
+    )['Items']
 
-    # start of implementation
-    file_control.add_test_image(_executation['image'])
-    del _executation['image']
+    _record_amount = len(_executations)
+    _percentage_othres = 0
+    _percentage_parkinson = 0
 
-    # temporary random value until model creation
-    _executation['percentage'] = str(random.randint(0, 100))
+    for e in _executations:
+        _percentage_othres += int(e['percentage_others'])
+        _percentage_parkinson += int(e['percentage_parkinson'])
 
-    executation_classification_table.put_item(Item=_executation)
+    return int(_percentage_othres / _record_amount), int(_percentage_parkinson / _record_amount)
+
+def create_predict_id(event, context):
     return {
         'statusCode': 200,
-        'body': json.dumps(_executation)
+        'body': json.dumps({
+            'predictid': str(uuid.uuid4().hex)
+        })
+    }
+
+def evaluator(event, context):
+    _id = uuid.uuid4().hex
+    _data = json.loads(event['body'])
+    _data['url_image'] = file_control.add(_data['image'], path='dataCollectedTesting/wait/')
+    del _data['image']
+
+    sqs.send_message(
+        QueueUrl=os.environ['SEGMENTATION_QUEUE_URL'],
+        MessageBody=json.dumps(_data),
+        MessageGroupId=_id,
+        MessageDeduplicationId=_id
+    )
+
+    response = {}
+
+    if int(_data['index']) > 0:
+        response['percentage_othres'], response['percentage_parkinson'] = _get_percentages(_data['predictid'])
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps(response)
     }
 
 def conclude(event, context):
-    _id = event['pathParameters']['patientid']
-    _executations = executation_classification_table.scan(
-        FilterExpression=Attr('patientid').eq(_id)
-    )['Items']
-
-    _list_size = len(_executations)
-    _sum_percentages = 0
-
-    for e in _executations:
-        _sum_percentages += int(e['percentage'])
-        executation_classification_table.delete_item(Key={ 'id': e['id'] })
-
-    _sum_percentages = int(_sum_percentages / _list_size)
+    _percentage_othres, _percentage_parkinson = _get_percentages(_data['predictid'])
 
     return {
         'statusCode': 200,
         'body': json.dumps({
-            'percentage': str(_sum_percentages)
+            'percentages': {
+                'othres': _percentage_othres,
+                'parkinson': _percentage_parkinson
+            } 
         })
     }

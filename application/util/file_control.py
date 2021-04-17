@@ -8,20 +8,14 @@ _s3_resource = boto3.resource("s3")
 _s3_client = boto3.client('s3')
 _bucket = os.environ['BUCKET_NAME']
 
-def add(file_data: dict):
-    _filename = get_uuid_name(file_data['filename'])
+def add(file_data, path=''):
+    _filename = path + get_uuid_name(file_data['filename'])
     _object = _s3_resource.Object(_bucket, _filename)
     _object.put(Body=to_byte(file_data['data']))
     _assign_public_reading(_filename)
     return _get_url(_filename)
 
-def add_test_image(file_data: dict, path='dataCollectedTesting/'):
-    _filename = path + get_uuid_name(file_data['filename'])
-    _object = _s3_resource.Object(_bucket, _filename)
-    _object.put(Body=to_byte(file_data['data']))
-    _assign_public_reading(_filename)
-
-def delete(filename: str):
+def delete(filename):
     _filename = filename.split('/')[-1]
     _s3_resource.Object(_bucket, _filename).delete()
 
