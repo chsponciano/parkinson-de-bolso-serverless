@@ -51,7 +51,7 @@ def evaluator(event, context):
 
     response = {}
 
-    if int(_data['index']) > 0:
+    if int(_data['index']) > 0 and not _data['isCollection']:
         response['percentage_othres'], response['percentage_parkinson'] = _get_percentages(_data['predictid'])
 
     return {
