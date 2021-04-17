@@ -4,7 +4,7 @@ import cv2
 import math
 import json
 import traceback
-import thread
+import _thread
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -78,7 +78,7 @@ class SegmentationService:
         try:
             body = json.loads(body)
             print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
-            thread.start_new_thread(run, (body))         
+            _thread.start_new_thread(run, (body))         
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
             print(traceback.format_exc())
