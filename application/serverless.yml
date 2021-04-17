@@ -235,8 +235,8 @@ functions:
     handler: handlers/predict.conclude
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/predict/{predictid}
-          method: get
+          path: ${file(./config.json):deployment.pathApi}/predict/conclude
+          method: post
           cors: true
           authorizer:
             type: COGNITO_USER_POOLS
