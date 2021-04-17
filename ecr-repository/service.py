@@ -42,7 +42,8 @@ class SegmentationService:
     @SQSConsumer(SEQMENTATION_QUEUE)
     def handle_message(self, body):
         try:
-            print('Segmentation Queue Consume')
+            body = json.loads(body)
+            print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
             
             # download s3 image
             _file_path = download_image(body['url_image'])  
@@ -97,7 +98,8 @@ class PredictionService:
     @SQSConsumer(PREDICT_QUEUE)
     def handle_message(self, body):
         try:
-            print('Predict Queue Consume') 
+            body = json.loads(body)
+            print('Predict Queue Consume - ID:', body['predictid'], '- index:', body['index'])
 
             # get the path of the local file
             _file_path = body['local_image']
