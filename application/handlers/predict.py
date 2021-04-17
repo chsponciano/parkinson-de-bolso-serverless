@@ -15,18 +15,18 @@ EXECUTATION_CLASSIFICATION_TABLE = DYNAMODB_RESOURCE.Table(os.environ['EXECUTATI
 
 def _get_percentages(predict_id):
     _executations = EXECUTATION_CLASSIFICATION_TABLE.scan(
-        FilterExpression=Attr('predictid').eq(predict_id)
+        FilterExpression=Attr('predictid').eq(predict_id) & Attr('isParkinson').eq(1)
     )['Items']
 
     _record_amount = len(_executations)
-    _percentage_othres = 0
-    _percentage_parkinson = 0
-
-    for e in _executations:
-        _percentage_othres += int(e['percentage_others'])
-        _percentage_parkinson += int(e['percentage_parkinson'])
-
-    return int(_percentage_othres / _record_amount), int(_percentage_parkinson / _record_amount)
+    _percentage = 0
+    
+    if _record_amount > 0:
+        for e in _executations:
+            _percentage += int(e['percentage'])
+        _percentage = int(percentage / _record_amount)
+    
+    return _percentage
 
 def create_predict_id(event, context):
     return {
@@ -52,7 +52,7 @@ def evaluator(event, context):
     response = {}
 
     if int(_data['index']) > 0 and not _data['isCollection']:
-        response['percentage_othres'], response['percentage_parkinson'] = _get_percentages(_data['predictid'])
+        response['percentage'] = _get_percentages(_data['predictid'])
 
     return {
         'statusCode': 200,
