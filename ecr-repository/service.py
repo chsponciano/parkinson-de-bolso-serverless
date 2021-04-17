@@ -41,7 +41,7 @@ class SegmentationService:
     @SQSConsumer(SEQMENTATION_QUEUE)
     def handle_message(self, body):
         try:
-            print(f'Segmentation Queue Consume - Patient: {body['patientid']} - {body['index']}')
+            print(f'Segmentation Queue Consume - id: {body['predictid']}/{body['index']}')
             
             # download s3 image
             _file_path = download_image(body['url_image'])  
@@ -86,7 +86,7 @@ class PredictionService:
     @SQSConsumer(PREDICT_QUEUE)
     def handle_message(self, body):
         try:
-            print(f'Predict Queue Consume - Patient: {body['patientid']} - {body['index']}') 
+            print(f'Predict Queue Consume - id: {body['predictid']}/{body['index']}') 
 
             # get the path of the local file
             _file_path = body['local_image']
@@ -101,6 +101,7 @@ class PredictionService:
 
             # save data to the database
             add_to_table(PREDICT_TABLE, {
+                'predictid': body['predictid'],
                 'patientid': body['patientid'],
                 'index': body['index'],
                 'url_image': body['url_image'],
