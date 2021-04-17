@@ -42,7 +42,8 @@ class SegmentationService:
 
     def run(self, body):
         body = json.loads(body)
-        
+        print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
+
         # download s3 image
         _file_path = download_image(body['url_image'])  
 
@@ -78,7 +79,6 @@ class SegmentationService:
     @SQSConsumer(SEQMENTATION_QUEUE)
     def handle_message(self, body):
         try:
-            print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
             _thread.start_new_thread(self.run, (body))         
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
