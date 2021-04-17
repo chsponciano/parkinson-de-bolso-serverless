@@ -23,6 +23,8 @@ from utils.db_utils import add_to_table
 
 INSTANCE_SEGMENTATION = instance_segmentation()
 TARGET_CLASSES = INSTANCE_SEGMENTATION.select_target_classes(person=True)
+SEGMENTATION_MODEL = os.environ.get('SEGMENTATION_MODEL')
+
 MODEL = load_model(os.environ.get('POCKET_PARKINSON_MODEL'))
 SEQMENTATION_QUEUE = os.environ.get('SEQMENTATION_QUEUE')
 PREDICT_QUEUE = os.environ.get('PREDICT_QUEUE')
@@ -40,15 +42,12 @@ class SegmentationService:
         _, _segmented_img = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY)
         return _segmented_img
 
-    def run(self, body):
-        body = json.loads(body)
-        print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
-
+    def run(self, url):
         # download s3 image
-        _file_path = download_image(body['url_image'])  
+        _file_path = download_image(url)  
 
         # target person in the image
-        INSTANCE_SEGMENTATION.load_model(os.environ.get('SEGMENTATION_MODEL'))
+        INSTANCE_SEGMENTATION.load_model(SEGMENTATION_MODEL)
         _mask, _ = INSTANCE_SEGMENTATION.segmentImage(
             _file_path, 
             segment_target_classes=TARGET_CLASSES, 
@@ -79,7 +78,9 @@ class SegmentationService:
     @SQSConsumer(SEQMENTATION_QUEUE)
     def handle_message(self, body):
         try:
-            _thread.start_new_thread(self.run, (body))         
+            body = json.loads(body)
+            print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
+            _thread.start_new_thread(self.run, (body['url_image']))         
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
             print(traceback.format_exc())
