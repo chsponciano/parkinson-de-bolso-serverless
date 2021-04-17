@@ -54,7 +54,7 @@ class SegmentationService:
                 _file_path, 
                 segment_target_classes=TARGET_CLASSES, 
                 extract_segmented_objects=True, 
-                verbose=0
+                verbose=1
             )
 
             # convert targeting values ​​to integer
