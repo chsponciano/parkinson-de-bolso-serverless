@@ -3,6 +3,7 @@ import skimage.io
 import cv2
 import math
 import json
+import traceback
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -48,8 +49,6 @@ class SegmentationService:
             # download s3 image
             _file_path = download_image(body['url_image'])  
 
-            print(_file_path)
-            
             # target person in the image
             _mask, _ = INSTANCE_SEGMENTATION.segmentImage(
                 _file_path, 
@@ -78,6 +77,7 @@ class SegmentationService:
                 SQSProducer(PREDICT_QUEUE, body)
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
+            print(traceback.format_exc())
 
 class PredictionService:
     name = 'PredictionService'
@@ -127,3 +127,4 @@ class PredictionService:
             })
         except Exception as e:
             print('Predict Queue Consume - Error:', str(e))
+            print(traceback.format_exc())
