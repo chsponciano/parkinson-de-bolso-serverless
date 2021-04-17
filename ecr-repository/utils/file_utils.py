@@ -1,6 +1,7 @@
 import os
 import base64
 import boto3
+import uuid
 
 S3_RESOURCE = boto3.resource('s3')
 S3_CLIENT = boto3.client('s3')
