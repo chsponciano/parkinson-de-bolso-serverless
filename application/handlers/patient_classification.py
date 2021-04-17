@@ -7,8 +7,8 @@ from boto3.dynamodb.conditions import Attr
 from util.decimal_encoder import DecimalEncoder
 
 
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(os.environ['PATIENT_CLASSIFICATION_TABLE'])
+DYNAMODB_RESOURCE = boto3.resource('dynamodb')
+PATIENT_CLASSIFICATION_TABLE = DYNAMODB_RESOURCE.Table(os.environ['PATIENT_CLASSIFICATION_TABLE'])
 
 class PatientClassificationModel:
     def __init__(self, data):
@@ -17,7 +17,7 @@ class PatientClassificationModel:
         self.date = data['date']
         
 def get_all(event, context):
-    _patientsClassifications = table.scan(
+    _patientsClassifications = PATIENT_CLASSIFICATION_TABLE.scan(
         FilterExpression=Attr('patientid').eq(event['pathParameters']['patientid'])
     )
     return {
@@ -26,7 +26,7 @@ def get_all(event, context):
     }
 
 def delete(event, context):
-    table.delete_item(
+    PATIENT_CLASSIFICATION_TABLE.delete_item(
         Key={
             'id': event['pathParameters']['id']
         }
@@ -39,7 +39,7 @@ def create(event, context):
     _patientsClassifications = PatientClassificationModel(json.loads(event['body'])).__dict__
     _patientsClassifications['id'] = str(uuid.uuid1())
     _patientsClassifications['percentage'] = _group_daily_data(_patientsClassifications)
-    table.put_item(Item=_patientsClassifications)
+    PATIENT_CLASSIFICATION_TABLE.put_item(Item=_patientsClassifications)
 
     return {
         'statusCode': 200,
@@ -48,7 +48,7 @@ def create(event, context):
 
 def _group_daily_data(patientsClassification):
     _percentage = float(patientsClassification['percentage'])
-    _classifications = table.scan(
+    _classifications = PATIENT_CLASSIFICATION_TABLE.scan(
         FilterExpression=Attr('patientid').eq(patientsClassification['patientid']) & Attr('date').eq(patientsClassification['date'])
     )['Items']
 
@@ -57,7 +57,7 @@ def _group_daily_data(patientsClassification):
     
     for c in _classifications:
         _percentage += float(c['percentage'])
-        table.delete_item(
+        PATIENT_CLASSIFICATION_TABLE.delete_item(
             Key={
                 'id': c['id']
             }

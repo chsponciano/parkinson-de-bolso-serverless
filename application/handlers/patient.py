@@ -9,8 +9,8 @@ from util.decimal_encoder import DecimalEncoder
 from util import update_parameters, file_control
 from handlers import patient_classification
 
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(os.environ['PATIENT_TABLE'])
+DYNAMODB_RESOURCE = boto3.resource('dynamodb')
+PATIENT_TABLE = DYNAMODB_RESOURCE.Table(os.environ['PATIENT_TABLE'])
 
 class PatientModel:
     def __init__(self, data):
@@ -23,7 +23,7 @@ class PatientModel:
         self.userid = data['userid']
 
 def get(event, context):
-    _patient = table.get_item(
+    _patient = PATIENT_TABLE.get_item(
         Key={
             'id': event['pathParameters']['id']
         }
@@ -34,7 +34,7 @@ def get(event, context):
     }
 
 def get_all(event, context):
-    _patiens = table.scan(
+    _patiens = PATIENT_TABLE.scan(
         FilterExpression=Attr('userid').eq(event['pathParameters']['userid'])
     )
     return {
@@ -52,7 +52,7 @@ def create(event, context):
     if _patient['image'] is not None:
         _patient['image'] = file_control.add(_patient['image'])
 
-    table.put_item(Item=_patient)
+    PATIENT_TABLE.put_item(Item=_patient)
     return {
         'statusCode': 200,
         'body': json.dumps(_patient)
@@ -69,7 +69,7 @@ def put(event, context):
     
     _expressions, _attribute_values = update_parameters.get(_patient)
 
-    _patient = table.update_item(
+    _patient = PATIENT_TABLE.update_item(
         Key={
             'id': _id
         },
@@ -92,7 +92,7 @@ def delete(event, context):
         event['pathParameters']['id'] = _classfication['id']
         patient_classification.delete(event, context)
     
-    table.delete_item(
+    PATIENT_TABLE.delete_item(
         Key={
             'id': _id
         }
@@ -102,6 +102,6 @@ def delete(event, context):
     }
 
 def _delete_patient_file(patient_id):
-    _patient = table.get_item(Key = {'id': patient_id})['Item']
+    _patient = PATIENT_TABLE.get_item(Key = {'id': patient_id})['Item']
     if _patient['image'] is not None:
         file_control.delete(_patient['image'])

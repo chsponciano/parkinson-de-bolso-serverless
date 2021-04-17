@@ -9,12 +9,12 @@ from boto3.dynamodb.conditions import Attr
 from util import file_control
 
 
-sqs = boto3.client('sqs')
-dynamodb = boto3.resource('dynamodb')
-executation_classification_table = dynamodb.Table(os.environ['EXECUTATION_CLASSIFICATION_TABLE'])
+SQS_CLIENT = boto3.client('sqs')
+DYNAMODB_RESOURCE = boto3.resource('dynamodb')
+EXECUTATION_CLASSIFICATION_TABLE = DYNAMODB_RESOURCE.Table(os.environ['EXECUTATION_CLASSIFICATION_TABLE'])
 
 def _get_percentages(predict_id):
-    _executations = executation_classification_table.scan(
+    _executations = EXECUTATION_CLASSIFICATION_TABLE.scan(
         FilterExpression=Attr('predictid').eq(predict_id)
     )['Items']
 
@@ -42,7 +42,7 @@ def evaluator(event, context):
     _data['url_image'] = file_control.add(_data['image'], path='dataCollectedTesting/wait/')
     del _data['image']
 
-    sqs.send_message(
+    SQS_CLIENT.send_message(
         QueueUrl=os.environ['SEGMENTATION_QUEUE_URL'],
         MessageBody=json.dumps(_data),
         MessageGroupId=_id,
