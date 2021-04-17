@@ -64,17 +64,17 @@ class SegmentationService:
             cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
 
             # remove s3 standby
-            # delete_standby_image(body['url_image'])
+            delete_standby_image(body['url_image'])
 
             # saves the segmented image on s3
-            # body['url_image'] = add_collection_image(_file_path)
+            body['url_image'] = add_collection_image(_file_path)
 
             # posts a message to the prediction queue with the 
             # local directory of the segmented image
             # Conditional: will not post the message when the flag isCollection is true
-            # if not body['isCollection']:
-            #     body['local_image'] = _file_path
-            #     SQSProducer(PREDICT_QUEUE, body)
+            if not body['isCollection']:
+                body['local_image'] = _file_path
+                SQSProducer(PREDICT_QUEUE, body)
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
             print(traceback.format_exc())
