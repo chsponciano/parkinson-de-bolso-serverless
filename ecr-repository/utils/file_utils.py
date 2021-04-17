@@ -10,11 +10,7 @@ TEMP_PATH = os.path.join(os.getcwd(), os.environ.get('TMP_PATH'))
 
 def add_collection_image(file_path, path='dataCollectedTesting/'):
     _filename = path + _get_uuid_name(os.path.basename(file_path))
-    _object = S3_RESOURCE.Object(BUCKET_NAME, _filename)
-    
-    with open(file_path) as fp:
-        _object.put(Body=fp)
-
+    S3_RESOURCE.Bucket(BUCKET_NAME).upload_file(file_path, _filename)
     _assign_public_reading(_filename)
     return _get_url(_filename)
 
