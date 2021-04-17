@@ -13,6 +13,7 @@ from pixellib.instance import instance_segmentation
 from keras.models import load_model
 import keras.backend as K
 K.set_image_data_format('channels_last')
+K.clear_session()
 
 from utils.sqs_utils import SQSConsumer, SQSProducer
 from PIL import Image
