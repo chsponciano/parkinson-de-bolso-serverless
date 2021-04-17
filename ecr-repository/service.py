@@ -40,7 +40,7 @@ class SegmentationService:
         _, _segmented_img = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY)
         return _segmented_img
 
-    def run(body):
+    def run(self, body):
         # download s3 image
         _file_path = download_image(body['url_image'])  
 
@@ -78,7 +78,7 @@ class SegmentationService:
         try:
             body = json.loads(body)
             print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
-            _thread.start_new_thread(run, (body))         
+            _thread.start_new_thread(self.run, (body))         
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
             print(traceback.format_exc())
