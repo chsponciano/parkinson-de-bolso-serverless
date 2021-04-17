@@ -32,7 +32,7 @@ PREDICT_TABLE = os.environ.get('PREDICT_TABLE')
 
 class SegmentationParallel(threading.Thread):
 	def __init__(self, body):
-		threading.Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.body = body
 
     def _get_silhouette(self, mask, file_path):
