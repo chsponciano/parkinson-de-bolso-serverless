@@ -40,7 +40,6 @@ class Consumer(Entrypoint):
                 self._handle_message(message)
 
     def _handle_message(self, message):
-        message = json.loads(message)
         _handle_result = partial(self._handle_result, message)
 
         self.container.spawn_worker(
