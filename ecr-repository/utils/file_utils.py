@@ -19,7 +19,7 @@ def add_collection_image(file_path, path='dataCollectedTesting/'):
 
 def delete_standby_image(filename):
     _filename = filename.split('/')[-1]
-    S3_RESOURCE.Object(_bucket, f'dataCollectedTesting/wait/{_filename}').delete()
+    S3_RESOURCE.Object(BUCKET_NAME, f'dataCollectedTesting/wait/{_filename}').delete()
 
 def delete_local_tmp_imagem(file_path):
     if TEMP_PATH not in file_path:
@@ -34,7 +34,7 @@ def _get_uuid_name(filename):
     return str(uuid.uuid1()) + os.path.splitext(filename)[-1]
 
 def _assign_public_reading(filename):
-    _object_acl = S3_RESOURCE.ObjectAcl(_bucket, filename)
+    _object_acl = S3_RESOURCE.ObjectAcl(BUCKET_NAME, filename)
     _object_acl.put(ACL='public-read')
 
 def _get_url(filename):
