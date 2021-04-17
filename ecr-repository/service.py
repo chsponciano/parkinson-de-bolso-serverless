@@ -1,6 +1,7 @@
 import os
 import skimage.io
 import cv2
+import math
 import json
 
 from dotenv import load_dotenv
@@ -10,8 +11,8 @@ from utils.file_utils import download_image, add_collection_image, delete_standb
 from pixellib.instance import instance_segmentation
 
 from keras.models import load_model
-from keras import backend
-backend.set_image_data_format('channels_last')
+import keras.backend as K
+K.set_image_data_format('channels_last')
 
 from utils.sqs_utils import SQSConsumer, SQSProducer
 from PIL import Image
@@ -79,6 +80,14 @@ class SegmentationService:
 class PredictionService:
     name = 'PredictionService'
 
+    def _inv_softmax(self, x):
+        return (K.log(x) + K.log(math.log(10.))).numpy()[0]
+
+    def _convert_output(self, predict_value):
+        _converted_values = self._inv_softmax(predict_value)
+        _prediction_category = np.argmax(predict_value, axis=1)[0]
+        return str(_converted_values[_prediction_category] * 100), int(_prediction_category == 1)
+
     def _convert_image(self, file_path):
         _image = Image.open(_file_path)
         _image = _image.convert('RGB')
@@ -96,19 +105,22 @@ class PredictionService:
             # predict the local image
             # 0 - others
             # 1 - parkinson 
-            _predict = MODEL.predict(self._convert_image(_file_path))[0]
+            _predict = MODEL.predict(self._convert_image(_file_path))
 
             # remove local temporary image
             delete_local_tmp_imagem(_file_path)
+
+            # convert results
+            _porcentage, _isParkinson = _convert_output(_predict)
 
             # save data to the database
             add_to_table(PREDICT_TABLE, {
                 'predictid': body['predictid'],
                 'patientid': body['patientid'],
                 'index': body['index'],
-                'url_image': body['url_image'],
-                'percentage_others': str(_predict[0] * 100),
-                'percentage_parkinson': str(_predict[1] * 100)
+                'image': body['url_image'],
+                'isParkinson': _isParkinson
+                'percentage': _porcentage
             })
         except Exception as e:
             print('Predict Queue Consume - Error:', str(e))
