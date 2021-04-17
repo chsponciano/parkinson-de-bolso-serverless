@@ -28,7 +28,7 @@ def delete_local_tmp_imagem(file_path):
 
 def download_image(url):
     os.system(f'wget -P {TEMP_PATH} {url}')
-   return os.path.join(TEMP_PATH, os.path.basename(url))
+    return os.path.join(TEMP_PATH, os.path.basename(url))
 
 def _get_uuid_name(filename):
     return str(uuid.uuid1()) + os.path.splitext(filename)[-1]
