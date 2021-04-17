@@ -20,9 +20,7 @@ from PIL import Image
 
 from utils.db_utils import add_to_table
 
-INSTANCE_SEGMENTATION = instance_segmentation()
-INSTANCE_SEGMENTATION.load_model(os.environ.get('SEGMENTATION_MODEL'))
-TARGET_CLASSES = INSTANCE_SEGMENTATION.select_target_classes(person=True)
+
 MODEL = load_model(os.environ.get('POCKET_PARKINSON_MODEL'))
 SEQMENTATION_QUEUE = os.environ.get('SEQMENTATION_QUEUE')
 PREDICT_QUEUE = os.environ.get('PREDICT_QUEUE')
@@ -47,10 +45,12 @@ class SegmentationService:
             print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
             
             # download s3 image
-            # _file_path = download_image(body['url_image'])  
-            _file_path = '/home/ubuntu/pocket-parkinson-serverless/ecr-repository/tmp/teste.png'
+            _file_path = download_image(body['url_image'])  
 
             # target person in the image
+            INSTANCE_SEGMENTATION = instance_segmentation()
+            INSTANCE_SEGMENTATION.load_model(os.environ.get('SEGMENTATION_MODEL'))
+            TARGET_CLASSES = INSTANCE_SEGMENTATION.select_target_classes(person=True)
             _mask, _ = INSTANCE_SEGMENTATION.segmentImage(
                 _file_path, 
                 segment_target_classes=TARGET_CLASSES, 
