@@ -123,7 +123,7 @@ class PredictionService:
                 'patientid': body['patientid'],
                 'index': _predict_index,
                 'image': body['url_image'],
-                'isParkinson': _isParkinson
+                'isParkinson': _isParkinson,
                 'percentage': _porcentage
             })
         except Exception as e:
