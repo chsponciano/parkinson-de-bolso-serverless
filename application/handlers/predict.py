@@ -60,14 +60,11 @@ def evaluator(event, context):
     }
 
 def conclude(event, context):
-    _percentage_othres, _percentage_parkinson = _get_percentages(_data['predictid'])
+    _percentage = _get_percentages(_data['predictid'])
 
     return {
         'statusCode': 200,
         'body': json.dumps({
-            'percentages': {
-                'othres': _percentage_othres,
-                'parkinson': _percentage_parkinson
-            } 
+            'percentages': _percentage
         })
     }
