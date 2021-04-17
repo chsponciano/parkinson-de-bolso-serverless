@@ -60,7 +60,7 @@ def evaluator(event, context):
     }
 
 def conclude(event, context):
-    _percentage = _get_percentages(_data['predictid'])
+    _percentage = _get_percentages(event['pathParameters']['predictid'])
 
     return {
         'statusCode': 200,

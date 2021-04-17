@@ -235,8 +235,8 @@ functions:
     handler: handlers/predict.conclude
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/predict/{patientid}
-          method: delete
+          path: ${file(./config.json):deployment.pathApi}/predict/{predictid}
+          method: get
           cors: true
           authorizer:
             type: COGNITO_USER_POOLS
