@@ -4,6 +4,7 @@ import cv2
 import math
 import json
 import traceback
+import thread
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -39,42 +40,45 @@ class SegmentationService:
         _, _segmented_img = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY)
         return _segmented_img
 
+    def run(body):
+        # download s3 image
+        _file_path = download_image(body['url_image'])  
+
+        # target person in the image
+        INSTANCE_SEGMENTATION.load_model(os.environ.get('SEGMENTATION_MODEL'))
+        _mask, _ = INSTANCE_SEGMENTATION.segmentImage(
+            _file_path, 
+            segment_target_classes=TARGET_CLASSES, 
+            extract_segmented_objects=True
+        )
+
+        # convert targeting values ​​to integer
+        _mask = _mask['masks'].astype(int)
+
+        # get silhouette of the person in the image and
+        # save the new image in the local folder
+        cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
+
+        # remove s3 standby
+        # delete_standby_image(body['url_image'])
+
+        # saves the segmented image on s3
+        # body['url_image'] = add_collection_image(_file_path)
+
+        # posts a message to the prediction queue with the 
+        # local directory of the segmented image
+        # Conditional: will not post the message when the flag isCollection is true
+        # if not body['isCollection']:
+        #     body['local_image'] = _file_path
+        #     SQSProducer(PREDICT_QUEUE, body)
+
+
     @SQSConsumer(SEQMENTATION_QUEUE)
     def handle_message(self, body):
         try:
             body = json.loads(body)
             print('Segmentation Queue Consume - ID:', body['predictid'], '- index:', body['index'])
-            
-            # download s3 image
-            _file_path = download_image(body['url_image'])  
-
-            # target person in the image
-            INSTANCE_SEGMENTATION.load_model(os.environ.get('SEGMENTATION_MODEL'))
-            _mask, _ = INSTANCE_SEGMENTATION.segmentImage(
-                _file_path, 
-                segment_target_classes=TARGET_CLASSES, 
-                extract_segmented_objects=True
-            )
-
-            # convert targeting values ​​to integer
-            _mask = _mask['masks'].astype(int)
-
-            # get silhouette of the person in the image and
-            # save the new image in the local folder
-            cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
-
-            # remove s3 standby
-            # delete_standby_image(body['url_image'])
-
-            # saves the segmented image on s3
-            # body['url_image'] = add_collection_image(_file_path)
-
-            # posts a message to the prediction queue with the 
-            # local directory of the segmented image
-            # Conditional: will not post the message when the flag isCollection is true
-            # if not body['isCollection']:
-            #     body['local_image'] = _file_path
-            #     SQSProducer(PREDICT_QUEUE, body)
+            thread.start_new_thread(run, (body))         
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
             print(traceback.format_exc())
