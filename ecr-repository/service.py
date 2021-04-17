@@ -69,8 +69,10 @@ class SegmentationService:
 
             # posts a message to the prediction queue with the 
             # local directory of the segmented image
-            body['local_image'] = _file_path
-            SQSProducer(PREDICT_QUEUE, body)
+            # Conditional: will not post the message when the flag isCollection is true
+            if not body['isCollection']:
+                body['local_image'] = _file_path
+                SQSProducer(PREDICT_QUEUE, body)
         except Exception as e:
             print('Segmentation Queue Consume - Error:', str(e))
 
