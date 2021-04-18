@@ -53,7 +53,7 @@ class SegmentationService:
             body['local_image'] = _file_path
 
             # load segmentation model
-             _load_segmentation_model()
+            _instance_segmentation = self._load_segmentation_model()
 
             # creates the segmentation target
             _target_classes = _instance_segmentation.select_target_classes(person=True)
