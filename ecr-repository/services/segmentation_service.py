@@ -18,8 +18,6 @@ class SegmentationService:
     
     def __init__(self):    
         self._service_name = 'SegmentationService'
-        self._instance_segmentation = instance_segmentation()
-        self._target_classes = self._instance_segmentation.select_target_classes(person=True)
         self._segmentation_model_path = os.environ.get('SEGMENTATION_MODEL')
         self._produce_prediction = SQSProducer(os.environ.get('PREDICT_QUEUE'), os.environ.get('AWS_REGION'))
         
@@ -43,6 +41,9 @@ class SegmentationService:
         return _segmented_img
 
     def run(self, body):
+        # initialize the segmentation instance
+        _instance_segmentation = None
+
         # converting from string to map
         body = json.loads(body)
         wait_url = body['url_image']
@@ -55,11 +56,13 @@ class SegmentationService:
             # load segmentation model
             _instance_segmentation = self._load_segmentation_model()
 
+            # creates the segmentation target
+            _target_classes = _instance_segmentation.select_target_classes(person=True)
+
             # target person in the image
-            self._instance_segmentation.load_model(self._segmentation_model_path)
-            _mask, _ = self._instance_segmentation.segmentImage(
+            _mask, _ = _instance_segmentation.segmentImage(
                 _file_path, 
-                segment_target_classes=self._target_classes, 
+                segment_target_classes=_target_classes, 
                 extract_segmented_objects=True
             )
 
@@ -86,9 +89,9 @@ class SegmentationService:
 
         finally:
             # clears the segmentation instance
-            # K.clear_session()
-            # del _instance_segmentation
-            # gc.collect()
+            K.clear_session()
+            del _instance_segmentation
+            gc.collect()
             delete_standby_image(wait_url)
 
         return body
