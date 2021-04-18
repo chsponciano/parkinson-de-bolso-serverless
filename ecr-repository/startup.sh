@@ -1,2 +1,2 @@
 source ./venv/bin/activate
-python3 __init__.py
+nohup python3 -u ./__init__.py > output.log &

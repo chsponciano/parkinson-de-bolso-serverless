@@ -45,6 +45,8 @@ class PredictionService:
         return np.array([np.asarray(_image)]) / 255.0
 
     def run(self, body):
+        tf.keras.backend.clear_session()
+        
         # converting from string to map
         body = json.loads(body)
 

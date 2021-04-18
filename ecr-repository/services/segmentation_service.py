@@ -4,6 +4,7 @@ import json
 import traceback
 import skimage.io
 import numpy as np
+import tensorflow as tf
 import keras.backend as K
 K.set_image_data_format('channels_last')
 
@@ -36,6 +37,8 @@ class SegmentationService:
         return _segmented_img
 
     def run(self, body):
+        tf.keras.backend.clear_session()
+
         # converting from string to map
         body = json.loads(body)
         wait_url = body['url_image']
