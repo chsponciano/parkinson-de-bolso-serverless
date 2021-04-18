@@ -31,7 +31,7 @@ class SegmentationService:
     def _restart_layers(self, model):
         for layer in model.layers:
             self._id_layer += 1
-            layer.name = f'{layer.name}_{self._id_layer}' 
+            layer._name = f'{layer._name}_{self._id_layer}' 
 
     def _load_segmentation_model(self):
         _instance_segmentation = instance_segmentation()
