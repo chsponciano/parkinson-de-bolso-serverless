@@ -2,6 +2,7 @@ import os
 import gc
 import cv2
 import json
+import time
 import traceback
 import skimage.io
 import numpy as np
@@ -93,5 +94,6 @@ class SegmentationService:
             del _instance_segmentation
             gc.collect()
             delete_standby_image(wait_url)
+            time.sleep(2)
 
         return body
