@@ -57,7 +57,6 @@ class PredictionService:
             # 1 - parkinson 
             _predict = _model.predict(self._convert_image(body['local_image']))
 
-
             # convert results
             _porcentage, _isParkinson = self._convert_output(_predict)
 

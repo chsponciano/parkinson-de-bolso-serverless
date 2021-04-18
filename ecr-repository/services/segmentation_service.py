@@ -72,6 +72,7 @@ class SegmentationService:
                 delete_local_tmp_imagem(body['local_image'])
             print(traceback.format_exc())
         finally:
+            print('=========== delete link =========== ')
             delete_standby_image(body['url_image'])
 
         return body
