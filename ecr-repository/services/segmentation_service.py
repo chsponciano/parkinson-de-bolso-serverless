@@ -27,9 +27,19 @@ class SegmentationService:
     def get_queue(self):
         return os.environ.get('SEQMENTATION_QUEUE')
 
+    def _restart_session_layers(self, model):
+        session = K.get_session()
+        for layer in model.layers: 
+            for v in layer.__dict__:
+                v_arg = getattr(layer, v)
+                if hasattr(v_arg, 'initializer'):
+                    initializer_method = getattr(v_arg, 'initializer')
+                    initializer_method.run(session=session)
+
     def _load_segmentation_model(self):
         _instance_segmentation = instance_segmentation()
         _instance_segmentation.load_model(self._segmentation_model_path)
+        self._restart_session_layers(_instance_segmentation.model.keras_model)
         return _instance_segmentation
 
     def _get_silhouette(self, mask, file_path):
