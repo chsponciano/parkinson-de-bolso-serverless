@@ -8,7 +8,7 @@ from services.segmentation_service import SegmentationService
 from utils.sqs_utils import SQSConsume
 
 if __name__ == '__main__':
-    for service in [SegmentationService(), SegmentationService(), PredictionService()]:
+    for service in [SegmentationService(), PredictionService()]:
         consume = SQSConsume(
             service.get_name(), 
             service.get_queue(), 
