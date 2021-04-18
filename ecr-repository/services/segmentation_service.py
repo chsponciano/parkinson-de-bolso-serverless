@@ -27,7 +27,23 @@ class SegmentationService:
     def get_queue(self):
         return os.environ.get('SEQMENTATION_QUEUE')
 
+    def _load_segmentation_model(self):
+        _instance_segmentation = instance_segmentation()
+        _instance_segmentation.load_model(self._segmentation_model_path)
+        return _instance_segmentation
+
+    def _get_silhouette(self, mask, file_path):
+        image = skimage.io.imread(file_path)
+        for i in range(mask.shape[2]):
+            for j in range(image.shape[2]):
+                image[:,:,j] = image[:,:,j] * mask[:,:,i]
+        _, _segmented_img = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY)
+        return _segmented_img
+
     def run(self, body):
+        # initialize the segmentation instance
+        _instance_segmentation = None
+
         # converting from string to map
         body = json.loads(body)
         wait_url = body['url_image']
@@ -37,8 +53,25 @@ class SegmentationService:
             _file_path = download_image(wait_url)  
             body['local_image'] = _file_path
 
-            # run the file with the segmentation script in parallel
-            os.system('python %s -sm %s -f %s' % (os.path.join(os.getcwd(), os.environ.get('SEGMENTATION_ACTION')), self._segmentation_model_path, _file_path))
+            # load segmentation model
+            _instance_segmentation = self._load_segmentation_model()
+
+            # creates the segmentation target
+            _target_classes = _instance_segmentation.select_target_classes(person=True)
+
+            # target person in the image
+            _mask, _ = _instance_segmentation.segmentImage(
+                _file_path, 
+                segment_target_classes=_target_classes, 
+                extract_segmented_objects=True
+            )
+
+            # convert targeting values ​​to integer
+            _mask = _mask['masks'].astype(int)
+
+            # get silhouette of the person in the image and
+            # save the new image in the local folder
+            cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
 
             # saves the segmented image on s3
             body['url_image'] = add_collection_image(_file_path)
@@ -55,6 +88,10 @@ class SegmentationService:
             print(traceback.format_exc())
 
         finally:
+            # clears the segmentation instance
+            K.clear_session()
+            del _instance_segmentation
+            gc.collect()
             delete_standby_image(wait_url)
 
         return body
