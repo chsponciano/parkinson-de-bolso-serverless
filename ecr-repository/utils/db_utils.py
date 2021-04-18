@@ -12,6 +12,3 @@ def add_to_table(table_name, data):
     data['createdAt'] = _timestamp
     data['updatedAt'] = _timestamp
     _table.put_item(Item=data)
-
-
-    
