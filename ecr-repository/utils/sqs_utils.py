@@ -27,35 +27,34 @@ class SQSProducer:
 
 class SQSConsume(threading.Thread):
     
-    def __init__(self, service_name, queue_url, region, action, idx=1, sleeping_time=0.5):
+    def __init__(self, service_name, queue_url, region, action, sleeping_time=0.5):
         self._service_name = service_name
         self._queue_url = queue_url
         self._region = region
         self._action = action
-        self._idx = idx
         self._sleeping_time = sleeping_time
         threading.Thread.__init__(self)
         self.setup()
-        print('[%s][%s][%s] initialize aws queue consumer - queue: %s' % (self._service_name, self._idx, time.ctime(time.time()), queue_url))
+        print('[%s][%s][%s] initialize aws queue consumer - queue: %s' % (self._service_name, self._name, time.ctime(time.time()), queue_url))
 
     def setup(self):
         self._sqs_client = boto3.client('sqs', region_name=self._region)
 
     def restart(self):
-        print('[%s][%s][%s] calling a new instance' % (self._service_name, self._idx, time.ctime(time.time())))
-        consume = SQSConsume(self._service_name, self._queue_url, self._region, self._action, idx=self._idx + 1)
+        print('[%s][%s][%s] calling a new instance' % (self._service_name, self._name, time.ctime(time.time())))
+        consume = SQSConsume(self._service_name, self._queue_url, self._region, self._action)
         consume.start()
 
     def consume_message_queue(self, message):
-        print('[%s][%s][%s] consume message queue' % (self._service_name, self._idx, time.ctime(time.time())))
+        print('[%s][%s][%s] consume message queue' % (self._service_name, self._name, time.ctime(time.time())))
         self._sqs_client.delete_message(
             QueueUrl=self._queue_url, 
             ReceiptHandle=message['ReceiptHandle']
         )
 
     def handle_message(self, message):
-        print('[%s][%s][%s] processing received message' % (self._service_name, self._idx, time.ctime(time.time())))
-        print('[%s][%s][%s] message received: %s' % (self._service_name, self._idx, time.ctime(time.time()), message['Body']))
+        print('[%s][%s][%s] processing received message' % (self._service_name, self._name, time.ctime(time.time())))
+        print('[%s][%s][%s] message received: %s' % (self._service_name, self._name, time.ctime(time.time()), message['Body']))
         self.consume_message_queue(message)
         self.restart()
 
@@ -67,7 +66,7 @@ class SQSConsume(threading.Thread):
 
         while(not _stop):
             try:
-                print('[%s][%s][%s] looking for new messages...' % (self._service_name, self._idx, time.ctime(time.time())))
+                print('[%s][%s][%s] looking for new messages...' % (self._service_name, self._name, time.ctime(time.time())))
                 
                 response = self._sqs_client.receive_message(
                     QueueUrl=self._queue_url, 
@@ -79,9 +78,9 @@ class SQSConsume(threading.Thread):
                 for message in response:
                     self.handle_message(message)
 
-                print('[%s][%s][%s] ending search and entering standby' % (self._service_name, self._idx, time.ctime(time.time())))
+                print('[%s][%s][%s] ending search and entering standby' % (self._service_name, self._name, time.ctime(time.time())))
                 time.sleep(self._sleeping_time)
             except Exception as e:
-                print('[%s][%s][%s] an error has occurred: %s \n' % (self._service_name, self._idx, time.ctime(time.time()), str(e)))
+                print('[%s][%s][%s] an error has occurred: %s \n' % (self._service_name, self._name, time.ctime(time.time()), str(e)))
 
-        print('[%s][%s][%s] process closure' % (self._service_name, self._idx, time.ctime(time.time())))
+        print('[%s][%s][%s] process closure' % (self._service_name, self._name, time.ctime(time.time())))
