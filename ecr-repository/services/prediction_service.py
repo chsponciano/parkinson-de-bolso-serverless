@@ -81,7 +81,7 @@ class PredictionService:
             print(traceback.format_exc())
         finally:
             # clears the prediction instance
-            del _instance_prediction
+            _instance_prediction = None
             tf.keras.backend.clear_session()
             gc.collect()
 

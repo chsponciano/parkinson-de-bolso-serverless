@@ -89,7 +89,7 @@ class SegmentationService:
 
         finally:
             # clears the segmentation instance
-            del _instance_segmentation
+            _instance_segmentation = None
             tf.keras.backend.clear_session()
             gc.collect()
                 
