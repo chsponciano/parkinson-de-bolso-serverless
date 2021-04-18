@@ -1,4 +1,5 @@
 import os
+import gc
 import math
 import json
 import traceback
@@ -26,6 +27,9 @@ class PredictionService:
     def get_queue(self):
         return os.environ.get('PREDICT_QUEUE')
         
+    def _load_prediction_model(self):
+        return load_model(self._predict_model_path)
+
     def _inv_softmax(self, x):
         _values = tf.convert_to_tensor(x, dtype=tf.float32)
         _operation = K.log(_values) + K.log(math.log(10.))
@@ -45,19 +49,20 @@ class PredictionService:
         return np.array([np.asarray(_image)]) / 255.0
 
     def run(self, body):
-        tf.keras.backend.clear_session()
-        
+        # initialize the prediction instance
+        _instance_prediction = None
+
         # converting from string to map
         body = json.loads(body)
 
         try:
             # load template
-            _model = load_model(self._predict_model_path)
+            _instance_prediction = self._load_prediction_model()
 
             # predict the local image
             # 0 - others
             # 1 - parkinson 
-            _predict = _model.predict(self._convert_image(body['local_image']))
+            _predict = _instance_prediction.predict(self._convert_image(body['local_image']))
 
             # convert results
             _porcentage, _isParkinson = self._convert_output(_predict)
@@ -75,6 +80,12 @@ class PredictionService:
         except Exception as e:
             print(traceback.format_exc())
         finally:
+            # clears the prediction instance
+            if _instance_prediction is not None:
+                del _instance_prediction
+                tf.keras.backend.clear_session()
+                gc.collect()
+
             if 'local_image' in body and os.path.exists(body['local_image']):
                 delete_local_tmp_imagem(body['local_image'])
         return body

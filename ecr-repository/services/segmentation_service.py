@@ -41,6 +41,7 @@ class SegmentationService:
         return _segmented_img
 
     def run(self, body):
+        # initialize the segmentation instance
         _instance_segmentation = None
 
         # converting from string to map
@@ -87,10 +88,12 @@ class SegmentationService:
             print(traceback.format_exc())
 
         finally:
+            # clears the segmentation instance
             if _instance_segmentation is not None:
                 del _instance_segmentation
                 tf.keras.backend.clear_session()
                 gc.collect()
+                
             delete_standby_image(wait_url)
 
         return body
