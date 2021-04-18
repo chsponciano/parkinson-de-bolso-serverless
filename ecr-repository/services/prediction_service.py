@@ -81,10 +81,9 @@ class PredictionService:
             print(traceback.format_exc())
         finally:
             # clears the prediction instance
-            if _instance_prediction is not None:
-                del _instance_prediction
-                tf.keras.backend.clear_session()
-                gc.collect()
+            del _instance_prediction
+            tf.keras.backend.clear_session()
+            gc.collect()
 
             if 'local_image' in body and os.path.exists(body['local_image']):
                 delete_local_tmp_imagem(body['local_image'])

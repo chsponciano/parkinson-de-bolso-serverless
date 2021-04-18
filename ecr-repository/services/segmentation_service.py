@@ -89,10 +89,9 @@ class SegmentationService:
 
         finally:
             # clears the segmentation instance
-            if _instance_segmentation is not None:
-                del _instance_segmentation
-                tf.keras.backend.clear_session()
-                gc.collect()
+            del _instance_segmentation
+            tf.keras.backend.clear_session()
+            gc.collect()
                 
             delete_standby_image(wait_url)
 
