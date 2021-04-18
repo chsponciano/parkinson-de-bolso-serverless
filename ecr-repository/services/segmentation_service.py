@@ -20,7 +20,7 @@ class SegmentationService:
         self._service_name = 'SegmentationService'
         self._segmentation_model_path = os.environ.get('SEGMENTATION_MODEL')
         self._produce_prediction = SQSProducer(os.environ.get('PREDICT_QUEUE'), os.environ.get('AWS_REGION'))
-        self._instance_segmentation = self._load_segmentation_model()
+        self._instance_segmentation = instance_segmentation()
         
     def get_name(self):
         return self._service_name
@@ -29,9 +29,7 @@ class SegmentationService:
         return os.environ.get('SEQMENTATION_QUEUE')
 
     def _load_segmentation_model(self):
-        _instance_segmentation = instance_segmentation()
-        _instance_segmentation.load_model(self._segmentation_model_path)
-        return _instance_segmentation
+        self._instance_segmentation.load_model(self._segmentation_model_path)
 
     def _get_silhouette(self, mask, file_path):
         image = skimage.io.imread(file_path)
@@ -55,7 +53,7 @@ class SegmentationService:
             body['local_image'] = _file_path
 
             # load segmentation model
-            # _instance_segmentation = self._load_segmentation_model()
+            self._load_segmentation_model()
 
             # creates the segmentation target
             _target_classes = self._instance_segmentation.select_target_classes(person=True)
