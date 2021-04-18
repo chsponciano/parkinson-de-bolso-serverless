@@ -5,6 +5,7 @@ import skimage.io
 import numpy as np
 import keras.backend as K
 from pixellib.instance import instance_segmentation
+K.set_image_data_format('channels_last')
 
 
 def _get_silhouette(self, mask, file_path):
