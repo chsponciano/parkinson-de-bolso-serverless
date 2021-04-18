@@ -3,8 +3,6 @@ import math
 import json
 import traceback
 import numpy as np
-import tensorflow as tf
-tf.enable_eager_execution()
 import keras.backend as K
 K.set_image_data_format('channels_last')
 
@@ -28,7 +26,8 @@ class PredictionService:
         return os.environ.get('PREDICT_QUEUE')
         
     def _inv_softmax(self, x):
-        return (K.log(x) + K.log(math.log(10.))).numpy()[0]
+        print((K.log(x) + K.log(math.log(10.))))
+        # return (K.log(x) + K.log(math.log(10.))).numpy()[0]
 
     def _convert_output(self, predict_value):
         _converted_values = self._inv_softmax(predict_value)
@@ -61,17 +60,18 @@ class PredictionService:
             delete_local_tmp_imagem(_file_path)
 
             # convert results
-            _porcentage, _isParkinson = self._convert_output(_predict)
+            self._convert_output(_predict)
+            # _porcentage, _isParkinson = self._convert_output(_predict)
 
             # save data to the database
-            add_to_table(self._predict_table, {
-                'predictid': body['predictid'],
-                'patientid': body['patientid'],
-                'index': body['index'],
-                'image': body['url_image'],
-                'isParkinson': _isParkinson,
-                'percentage': _porcentage
-            })
+            # add_to_table(self._predict_table, {
+            #     'predictid': body['predictid'],
+            #     'patientid': body['patientid'],
+            #     'index': body['index'],
+            #     'image': body['url_image'],
+            #     'isParkinson': _isParkinson,
+            #     'percentage': _porcentage
+            # })
             
         except Exception as e:
             print(traceback.format_exc())
