@@ -34,7 +34,7 @@ class PredictionService:
         return str(_converted_values[_prediction_category] * 100), int(_prediction_category == 1)
 
     def _convert_image(self, file_path):
-        _image = Image.open(_file_path)
+        _image = Image.open(file_path)
         _image = _image.convert('RGB')
         _image = _image.resize((150, 150))
         return np.array([np.asarray(_image)]) / 255.0
