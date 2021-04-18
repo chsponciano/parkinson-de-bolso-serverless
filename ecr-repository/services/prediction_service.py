@@ -21,6 +21,9 @@ class PredictionService:
 
     def get_name(self):
         return self._service_name
+
+    def get_queue(self):
+        return os.environ.get('PREDICT_QUEUE')
         
     def _inv_softmax(self, x):
         return (K.log(x) + K.log(math.log(10.))).numpy()[0]

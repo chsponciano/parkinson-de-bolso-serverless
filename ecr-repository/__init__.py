@@ -11,7 +11,7 @@ if __name__ == '__main__':
     for service in [SegmentationService(), PredictionService()]:
         consume = SQSConsume(
             service.get_name(), 
-            os.environ.get('SEQMENTATION_QUEUE'), 
+            service.get_queue(), 
             os.environ.get('AWS_REGION'), 
             service.run
         )

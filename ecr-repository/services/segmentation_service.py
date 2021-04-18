@@ -24,6 +24,9 @@ class SegmentationService:
     def get_name(self):
         return self._service_name
 
+    def get_queue(self):
+        return os.environ.get('SEQMENTATION_QUEUE')
+
     def _get_silhouette(self, mask, file_path):
         image = skimage.io.imread(file_path)
         for i in range(mask.shape[2]):
