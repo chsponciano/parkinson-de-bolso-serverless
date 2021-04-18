@@ -8,7 +8,7 @@ from pixellib.instance import instance_segmentation
 K.set_image_data_format('channels_last')
 
 
-def get_silhouette(self, mask, file_path):
+def get_silhouette(mask, file_path):
     image = skimage.io.imread(file_path)
     for i in range(mask.shape[2]):
         for j in range(image.shape[2]):
