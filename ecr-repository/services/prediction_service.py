@@ -66,7 +66,7 @@ class PredictionService:
             # convert results
             _porcentage, _isParkinson = self._convert_output(_predict)
 
-            save data to the database
+            # save data to the database
             add_to_table(self._predict_table, {
                 'predictid': body['predictid'],
                 'patientid': body['patientid'],
