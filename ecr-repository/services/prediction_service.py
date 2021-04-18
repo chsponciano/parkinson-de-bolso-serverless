@@ -19,6 +19,9 @@ class PredictionService:
         self._model = load_model(os.environ.get('POCKET_PARKINSON_MODEL'))
         self._predict_table = os.environ.get('PREDICT_TABLE')
 
+    def get_name():
+        return self._service_name
+        
     def _inv_softmax(self, x):
         return (K.log(x) + K.log(math.log(10.))).numpy()[0]
 

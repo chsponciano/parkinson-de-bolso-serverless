@@ -21,6 +21,9 @@ class SegmentationService:
         self._segmentation_model_path = os.environ.get('SEGMENTATION_MODEL')
         self._produce_prediction = SQSProducer(os.environ.get('PREDICT_QUEUE'), os.environ.get('AWS_REGION'))
         
+    def get_name():
+        return self._service_name
+        
     def _get_silhouette(self, mask, file_path):
         image = skimage.io.imread(file_path)
         for i in range(mask.shape[2]):

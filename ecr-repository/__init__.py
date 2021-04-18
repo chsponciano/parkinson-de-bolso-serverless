@@ -10,10 +10,9 @@ from utils.sqs_utils import SQSConsume
 if __name__ == '__main__':
     for service in [SegmentationService(), PredictionService()]:
         consume = SQSConsume(
-            service.service_name, 
+            service.get_name(), 
             os.environ.get('SEQMENTATION_QUEUE'), 
             os.environ.get('AWS_REGION'), 
             service.run
         )
         consume.start()
-        
