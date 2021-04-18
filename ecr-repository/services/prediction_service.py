@@ -27,7 +27,8 @@ class PredictionService:
         return os.environ.get('PREDICT_QUEUE')
         
     def _inv_softmax(self, x):
-        return tf.convert_to_tensor((K.log(x) + K.log(math.log(10.)))).numpy()[0]
+        return tf.convert_to_tensor((K.log(x) + K.log(math.log(10.))))
+        # .numpy()[0]
 
     def _convert_output(self, predict_value):
         print(predict_value)
