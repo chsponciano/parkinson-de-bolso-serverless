@@ -1,59 +1,87 @@
+import os
 import boto3
 import json
 import uuid
-import os
+import time
+import threading
 
-from nameko.extensions import Entrypoint
-from functools import partial
+class SQSProducer:
 
-
-AWS_REGION = os.environ.get('AWS_REGION')
-SQS_CLIENT = boto3.client('sqs', region_name=AWS_REGION)
-
-def SQSProducer(queue_url, message):
-    _id = uuid.uuid4().hex
-
-    return SQS_CLIENT.send_message(
-        QueueUrl=queue_url,
-        MessageBody=json.dumps(message),
-        MessageGroupId=_id,
-        MessageDeduplicationId=_id
-    )
-
-class Consumer(Entrypoint):
-
-    def __init__(self, queue_url, **kwargs):
+    def __init__(self, queue_url, region):
         self._queue_url = queue_url
-        super(Consumer, self).__init__(**kwargs)
+        self._region = region
+        self.setup()
 
-    def start(self):
-        self.container.spawn_managed_thread(self.run, identifier="Consumer.run")
+    def setup(self):
+        self._sqs_client = boto3.client('sqs', region_name=self._region)
 
-    def run(self):
-        while True:
-            _response = SQS_CLIENT.receive_message(
-                QueueUrl=self._queue_url,
-                WaitTimeSeconds=15,
-            )
-
-            for message in _response.get('Messages', ()):
-                self._handle_message(message)
-
-    def _handle_message(self, message):
-        _handle_result = partial(self._handle_result, message)
-
-        self.container.spawn_worker(
-            self, 
-            (message['Body'],), 
-            {}, 
-            handle_result=_handle_result
-        )
-
-    def _handle_result(self, message, worker_ctx, result, exc_info):
-        SQS_CLIENT.delete_message(
+    def run(self, message):
+        _id = uuid.uuid4().hex
+        return self._sqs_client.send_message(
             QueueUrl=self._queue_url,
+            MessageBody=json.dumps(message),
+            MessageGroupId=_id,
+            MessageDeduplicationId=_id
+        )
+        
+
+class SQSConsume(threading.Thread):
+    
+    def __init__(self, service_name, queue_url, region, action, idx=1, sleeping_time=0.5):
+        self._service_name = service_name
+        self._queue_url = queue_url
+        self._region = region
+        self._action = action
+        self._idx = idx
+        self._sleeping_time = sleeping_time
+        threading.Thread.__init__(self)
+        self.setup()
+        print('[%s][%s][%s] initialize aws queue consumer - queue: %s' % (self._service_name, self._idx, time.ctime(time.time()), queue_url))
+
+    def setup(self):
+        self._sqs_client = boto3.client('sqs', region_name=self._region)
+
+    def restart(self):
+        print('[%s][%s][%s] calling a new instance' % (self._service_name, self._idx, time.ctime(time.time())))
+        consume = SQSConsume(self._service_name, self._queue_url, self._region, self._action, idx=self._idx + 1)
+        consume.start()
+
+    def consume_message_queue(self, message):
+        print('[%s][%s][%s] consume message queue' % (self._service_name, self._idx, time.ctime(time.time())))
+        self._sqs_client.delete_message(
+            QueueUrl=self._queue_url, 
             ReceiptHandle=message['ReceiptHandle']
         )
-        return result, exc_info
 
-SQSConsumer = Consumer.decorator
+    def handle_message(self, message):
+        print('[%s][%s][%s] processing received message' % (self._service_name, self._idx, time.ctime(time.time())))
+        print('[%s][%s][%s] message received: %s' % (self._service_name, self._idx, time.ctime(time.time()), message['Body']))
+        self.consume_message_queue(message)
+        self.restart()
+
+        # performs the service action
+        self._action(message)
+
+    def run(self):
+        _stop = False
+
+        while(not _stop):
+            try:
+                print('[%s][%s][%s] looking for new messages...' % (self._service_name, self._idx, time.ctime(time.time())))
+                
+                response = self._sqs_client.receive_message(
+                    QueueUrl=self._queue_url, 
+                    WaitTimeSeconds=5
+                ).get('Messages', ())
+
+                _stop = len(response) > 0
+                    
+                for message in response:
+                    self.handle_message(message)
+
+                print('[%s][%s][%s] ending search and entering standby' % (self._service_name, self._idx, time.ctime(time.time())))
+                time.sleep(self._sleeping_time)
+            except Exception as e:
+                print('[%s][%s][%s] an error has occurred: %s \n' % (self._service_name, self._idx, time.ctime(time.time()), str(e)))
+
+        print('[%s][%s][%s] process closure' % (self._service_name, self._idx, time.ctime(time.time())))
