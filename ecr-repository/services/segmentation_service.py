@@ -35,7 +35,7 @@ class SegmentationService:
     def run(self, body):
         try:
             # converting from string to map
-            body = json.loads(body)
+            body = json.loads(json.dumps(body))
             
             # download s3 image
             _file_path = download_image(body['url_image'])  

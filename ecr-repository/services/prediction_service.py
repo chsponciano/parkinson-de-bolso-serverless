@@ -39,7 +39,7 @@ class PredictionService:
     def run(self, body):
         try:
             # converting from string to map
-            body = json.loads(body)
+            body = json.loads(json.dumps(body))
 
             # get the path of the local file
             _file_path = body['local_image']
