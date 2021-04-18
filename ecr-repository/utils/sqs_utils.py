@@ -57,7 +57,7 @@ class SQSConsume(threading.Thread):
         print('[%s][%s][%s] processing received message' % (self._service_name, self._idx, time.ctime(time.time())))
         print('[%s][%s][%s] message received: %s' % (self._service_name, self._idx, time.ctime(time.time()), message['Body']))
         self.consume_message_queue(message)
-        self.restart()
+        # self.restart()
 
         # performs the service action
         self._action(message['Body'])
@@ -74,7 +74,7 @@ class SQSConsume(threading.Thread):
                     WaitTimeSeconds=5
                 ).get('Messages', ())
 
-                _stop = len(response) > 0
+                # _stop = len(response) > 0
                     
                 for message in response:
                     self.handle_message(message)
