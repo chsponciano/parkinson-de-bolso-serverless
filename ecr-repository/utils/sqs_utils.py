@@ -60,7 +60,7 @@ class SQSConsume(threading.Thread):
         self.restart()
 
         # performs the service action
-        self._action(message)
+        self._action(message['Body'])
 
     def run(self):
         _stop = False
