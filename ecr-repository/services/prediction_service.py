@@ -75,6 +75,6 @@ class PredictionService:
             print(traceback.format_exc())
         finally:
             if 'local_image' in body and os.path.exists(body['local_image']):
-                delete_local_tmp_imagem(_file_path)
+                delete_local_tmp_imagem(body['local_image'])
         return body
         
