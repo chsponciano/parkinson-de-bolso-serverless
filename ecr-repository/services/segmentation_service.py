@@ -18,10 +18,11 @@ class SegmentationService:
     def __init__(self):    
         self._service_name = 'SegmentationService'
         self._instance_segmentation = instance_segmentation()
+        self._instance_segmentation.keras_model._make_predict_function()
+        self._instance_segmentation.load_model(self._segmentation_model_path)
         self._target_classes = self._instance_segmentation.select_target_classes(person=True)
         self._segmentation_model_path = os.environ.get('SEGMENTATION_MODEL')
         self._produce_prediction = SQSProducer(os.environ.get('PREDICT_QUEUE'), os.environ.get('AWS_REGION'))
-        self._instance_segmentation.load_model(self._segmentation_model_path)
         
     def get_name(self):
         return self._service_name
