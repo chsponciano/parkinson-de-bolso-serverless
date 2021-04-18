@@ -3,6 +3,8 @@ import math
 import json
 import traceback
 import numpy as np
+import tensorflow as tf
+tf.enable_eager_execution()
 import keras.backend as K
 K.set_image_data_format('channels_last')
 
