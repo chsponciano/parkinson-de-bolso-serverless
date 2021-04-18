@@ -19,6 +19,7 @@ class PredictionService:
         self._service_name = 'PredictionService'
         self._predict_table = os.environ.get('PREDICT_TABLE')
         self._predict_model_path = os.environ.get('POCKET_PARKINSON_MODEL')
+        self._session = tf.InteractiveSession()
 
     def get_name(self):
         return self._service_name
@@ -27,8 +28,11 @@ class PredictionService:
         return os.environ.get('PREDICT_QUEUE')
         
     def _inv_softmax(self, x):
-        x = tf.convert_to_tensor(x, dtype=tf.float32)
-        return (K.log(x) + K.log(math.log(10.)))
+        _values = tf.convert_to_tensor(x, dtype=tf.float32)
+        _operation = (K.log(_values) + K.log(math.log(10.)))
+        return self._session.run([_operation])
+        
+        return 
         # .numpy()[0]
 
     def _convert_output(self, predict_value):
