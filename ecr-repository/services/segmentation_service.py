@@ -21,6 +21,7 @@ class SegmentationService:
         self._target_classes = self._instance_segmentation.select_target_classes(person=True)
         self._segmentation_model_path = os.environ.get('SEGMENTATION_MODEL')
         self._produce_prediction = SQSProducer(os.environ.get('PREDICT_QUEUE'), os.environ.get('AWS_REGION'))
+        self._instance_segmentation.load_model(self._segmentation_model_path)
         
     def get_name(self):
         return self._service_name
@@ -49,7 +50,6 @@ class SegmentationService:
             body['local_image'] = _file_path
 
             # target person in the image
-            self._instance_segmentation.load_model(self._segmentation_model_path)
             _mask, _ = self._instance_segmentation.segmentImage(
                 _file_path, 
                 segment_target_classes=self._target_classes, 
