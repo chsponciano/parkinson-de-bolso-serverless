@@ -31,15 +31,12 @@ class PredictionService:
         _operation = K.log(_values) + K.log(math.log(10.))
 
         with tf.compat.v1.Session() as sess:
-            return sess.run(_operation)
-        # .numpy()[0]
+            return sess.run(_operation)[0]
 
     def _convert_output(self, predict_value):
-        print(predict_value)
         _converted_values = self._inv_softmax(predict_value)
-        print(_converted_values)
-        # _prediction_category = np.argmax(predict_value, axis=1)[0]
-        # return str(_converted_values[_prediction_category] * 100), int(_prediction_category == 1)
+        _prediction_category = np.argmax(predict_value, axis=1)[0]
+        return str(_converted_values[_prediction_category] * 100), int(_prediction_category == 1)
 
     def _convert_image(self, file_path):
         _image = Image.open(file_path)
@@ -67,18 +64,17 @@ class PredictionService:
             delete_local_tmp_imagem(_file_path)
 
             # convert results
-            self._convert_output(_predict)
-            # _porcentage, _isParkinson = self._convert_output(_predict)
+            _porcentage, _isParkinson = self._convert_output(_predict)
 
-            # save data to the database
-            # add_to_table(self._predict_table, {
-            #     'predictid': body['predictid'],
-            #     'patientid': body['patientid'],
-            #     'index': body['index'],
-            #     'image': body['url_image'],
-            #     'isParkinson': _isParkinson,
-            #     'percentage': _porcentage
-            # })
+            save data to the database
+            add_to_table(self._predict_table, {
+                'predictid': body['predictid'],
+                'patientid': body['patientid'],
+                'index': body['index'],
+                'image': body['url_image'],
+                'isParkinson': _isParkinson,
+                'percentage': _porcentage
+            })
             
         except Exception as e:
             print(traceback.format_exc())
