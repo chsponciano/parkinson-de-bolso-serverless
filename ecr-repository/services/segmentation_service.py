@@ -20,7 +20,6 @@ class SegmentationService:
         self._service_name = 'SegmentationService'
         self._segmentation_model_path = os.environ.get('SEGMENTATION_MODEL')
         self._produce_prediction = SQSProducer(os.environ.get('PREDICT_QUEUE'), os.environ.get('AWS_REGION'))
-        self._id_layer = 0;
         
     def get_name(self):
         return self._service_name
@@ -28,17 +27,9 @@ class SegmentationService:
     def get_queue(self):
         return os.environ.get('SEQMENTATION_QUEUE')
 
-    def _restart_model(self, model):
-        self._id_layer += 1
-        model._name = f'{model._name}_{self._id_layer}'
-        for l in model.layers:
-            l._name = f'{l._name}_{self._id_layer}'
-        model.save(self._segmentation_model_path)
-
     def _load_segmentation_model(self):
         _instance_segmentation = instance_segmentation()
         _instance_segmentation.load_model(self._segmentation_model_path)
-        self._restart_model(_instance_segmentation.model.keras_model)
         return _instance_segmentation
 
     def _get_silhouette(self, mask, file_path):
