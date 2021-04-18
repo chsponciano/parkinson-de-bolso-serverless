@@ -3,6 +3,7 @@ import math
 import json
 import traceback
 import numpy as np
+import tensorflow as tf
 import keras.backend as K
 K.set_image_data_format('channels_last')
 
@@ -26,12 +27,12 @@ class PredictionService:
         return os.environ.get('PREDICT_QUEUE')
         
     def _inv_softmax(self, x):
-        print((K.log(x) + K.log(math.log(10.))))
-        # return (K.log(x) + K.log(math.log(10.))).numpy()[0]
+        return tf.convert_to_tensor((K.log(x) + K.log(math.log(10.)))).numpy()[0]
 
     def _convert_output(self, predict_value):
         print(predict_value)
         _converted_values = self._inv_softmax(predict_value)
+        print(_converted_values)
         # _prediction_category = np.argmax(predict_value, axis=1)[0]
         # return str(_converted_values[_prediction_category] * 100), int(_prediction_category == 1)
 
