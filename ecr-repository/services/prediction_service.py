@@ -19,7 +19,7 @@ class PredictionService:
         self._service_name = 'PredictionService'
         self._predict_table = os.environ.get('PREDICT_TABLE')
         self._predict_model_path = os.environ.get('POCKET_PARKINSON_MODEL')
-        self._session = tf.InteractiveSession()
+        self._session = tf.compat.v1.InteractiveSession()
 
     def get_name(self):
         return self._service_name
