@@ -38,10 +38,11 @@ class SegmentationService:
     def run(self, body):
         # converting from string to map
         body = json.loads(body)
+        wait_url = body['url_image']
 
         try:
             # download s3 image
-            _file_path = download_image(body['url_image'])  
+            _file_path = download_image(wait_url)  
             body['local_image'] = _file_path
 
             # target person in the image
@@ -67,12 +68,13 @@ class SegmentationService:
             # Conditional: will not post the message when the flag isCollection is true
             if not body['isCollection']:
                 self._produce_prediction.run(body)
+                
         except Exception as e:
             if 'local_image' in body and os.path.exists(body['local_image']):
                 delete_local_tmp_imagem(body['local_image'])
             print(traceback.format_exc())
+
         finally:
-            print('=========== delete link =========== ')
-            delete_standby_image(body['url_image'])
+            delete_standby_image(wait_url)
 
         return body
