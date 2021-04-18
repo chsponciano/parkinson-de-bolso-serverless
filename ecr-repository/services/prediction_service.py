@@ -84,7 +84,6 @@ class PredictionService:
             del _instance_prediction
             tf.keras.backend.clear_session()
             gc.collect()
-
             if 'local_image' in body and os.path.exists(body['local_image']):
                 delete_local_tmp_imagem(body['local_image'])
         return body
