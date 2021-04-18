@@ -30,9 +30,10 @@ class PredictionService:
         # return (K.log(x) + K.log(math.log(10.))).numpy()[0]
 
     def _convert_output(self, predict_value):
+        print(predict_value)
         _converted_values = self._inv_softmax(predict_value)
-        _prediction_category = np.argmax(predict_value, axis=1)[0]
-        return str(_converted_values[_prediction_category] * 100), int(_prediction_category == 1)
+        # _prediction_category = np.argmax(predict_value, axis=1)[0]
+        # return str(_converted_values[_prediction_category] * 100), int(_prediction_category == 1)
 
     def _convert_image(self, file_path):
         _image = Image.open(file_path)
