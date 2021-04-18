@@ -16,8 +16,8 @@ class PredictionService:
 
     def __init__(self):    
         self._service_name = 'PredictionService'
-        self._model = load_model(os.environ.get('POCKET_PARKINSON_MODEL'))
         self._predict_table = os.environ.get('PREDICT_TABLE')
+        self._predict_model_path = os.environ.get('POCKET_PARKINSON_MODEL')
 
     def get_name(self):
         return self._service_name
@@ -47,10 +47,13 @@ class PredictionService:
             # get the path of the local file
             _file_path = body['local_image']
 
+            # load template
+            _model = load_model(self._predict_model_path)
+
             # predict the local image
             # 0 - others
             # 1 - parkinson 
-            _predict = self._model.predict(self._convert_image(_file_path))
+            _predict = _model.predict(self._convert_image(_file_path))
 
             # remove local temporary image
             delete_local_tmp_imagem(_file_path)
