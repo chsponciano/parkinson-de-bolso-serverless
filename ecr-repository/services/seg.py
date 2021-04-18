@@ -28,7 +28,7 @@ file_path = args['file']
 
 mask, _ = instance_segmentation.segmentImage(
     file_path, 
-    segment_target_classes=_target_classes, 
+    segment_target_classes=target_classes, 
     extract_segmented_objects=True
 )
 
