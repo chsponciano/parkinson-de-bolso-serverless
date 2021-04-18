@@ -9,7 +9,7 @@ K.set_image_data_format('channels_last')
 
 from utils.sqs_utils import SQSProducer
 from pixellib.instance import instance_segmentation
-from utils.file_utils import download_image, add_collection_image, delete_standby_image
+from utils.file_utils import download_image, add_collection_image, delete_standby_image, delete_local_tmp_imagem
 
 
 class SegmentationService:
@@ -36,12 +36,13 @@ class SegmentationService:
         return _segmented_img
 
     def run(self, body):
+        # converting from string to map
+        body = json.loads(body)
+
         try:
-            # converting from string to map
-            body = json.loads(body)
-            
             # download s3 image
             _file_path = download_image(body['url_image'])  
+            body['local_image'] = _file_path
 
             # target person in the image
             self._instance_segmentation.load_model(self._segmentation_model_path)
@@ -58,9 +59,6 @@ class SegmentationService:
             # save the new image in the local folder
             cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
 
-            # remove s3 standby
-            delete_standby_image(body['url_image'])
-
             # saves the segmented image on s3
             body['url_image'] = add_collection_image(_file_path)
 
@@ -68,9 +66,12 @@ class SegmentationService:
             # local directory of the segmented image
             # Conditional: will not post the message when the flag isCollection is true
             if not body['isCollection']:
-                body['local_image'] = _file_path
                 self._produce_prediction.run(body)
         except Exception as e:
+            if 'local_image' in body and os.path.exists(body['local_image']):
+                delete_local_tmp_imagem(body['local_image'])
             print(traceback.format_exc())
+        finally:
+            delete_standby_image(body['url_image'])
 
         return body

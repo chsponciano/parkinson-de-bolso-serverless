@@ -45,23 +45,18 @@ class PredictionService:
         return np.array([np.asarray(_image)]) / 255.0
 
     def run(self, body):
+        # converting from string to map
+        body = json.loads(body)
+
         try:
-            # converting from string to map
-            body = json.loads(body)
-
-            # get the path of the local file
-            _file_path = body['local_image']
-
             # load template
             _model = load_model(self._predict_model_path)
 
             # predict the local image
             # 0 - others
             # 1 - parkinson 
-            _predict = _model.predict(self._convert_image(_file_path))
+            _predict = _model.predict(self._convert_image(body['local_image']))
 
-            # remove local temporary image
-            delete_local_tmp_imagem(_file_path)
 
             # convert results
             _porcentage, _isParkinson = self._convert_output(_predict)
@@ -78,6 +73,8 @@ class PredictionService:
             
         except Exception as e:
             print(traceback.format_exc())
-
+        finally:
+            if 'local_image' in body and os.path.exists(body['local_image']):
+                delete_local_tmp_imagem(_file_path)
         return body
         
