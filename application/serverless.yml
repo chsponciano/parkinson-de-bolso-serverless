@@ -10,6 +10,7 @@ provider:
       PATIENT_TABLE: ${self:service}-patients
       PATIENT_CLASSIFICATION_TABLE: ${self:service}-patients-classifications
       EXECUTATION_CLASSIFICATION_TABLE: ${self:service}-executations-classifications
+      NOTIFICATION_TABLE: ${self:service}-notification
       APPLICATION_EMAIL: ${file(./config.json):deployment.applicationEmail}
       DEV_EMAIL: ${file(./config.json):deployment.devEmail}
       SEGMENTATION_QUEUE_URL: ${file(./config.json):deployment.segmentationQueueUrl} 
@@ -20,6 +21,7 @@ provider:
             - dynamodb:*
             - ses:SendEmail
             - sqs:*
+            - lambda:*
         Resource: '*'
 
 resources:
@@ -44,6 +46,7 @@ resources:
       Properties:
         ClientName: ${file(./config.json):deployment.clientName}
         GenerateSecret: False
+        AccessTokenValidity: 24
         UserPoolId:
           Ref: CognitoUserPool
 
@@ -100,6 +103,21 @@ resources:
       DeletionPolicy: Retain
       Properties:
         TableName: ${self:provider.environment.EXECUTATION_CLASSIFICATION_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5 
+
+    NotificationTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.NOTIFICATION_TABLE}
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -207,11 +225,11 @@ functions:
             authorizerId:
               Ref: ApiGatewayAuthorizer
 
-  PredictInitialize:
+  CreatePredictionId:
     handler: handlers/predict.create_predict_id
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/predict/initialize
+          path: ${file(./config.json):deployment.pathApi}/predict/create/id
           method: post
           cors: true
           authorizer:
@@ -219,11 +237,11 @@ functions:
             authorizerId:
               Ref: ApiGatewayAuthorizer
 
-  PredictEvaluator:
-    handler: handlers/predict.evaluator
+  AddImagePredictionQueue:
+    handler: handlers/predict.add_image_prediction_queue
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/predict
+          path: ${file(./config.json):deployment.pathApi}/predict/add/image
           method: post
           cors: true
           authorizer:
@@ -231,11 +249,11 @@ functions:
             authorizerId:
               Ref: ApiGatewayAuthorizer
 
-  PredictConclude:
-    handler: handlers/predict.conclude
+  RequestTerminatePrediction:
+    handler: handlers/predict.request_terminate_prediction
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/predict/conclude
+          path: ${file(./config.json):deployment.pathApi}/predict/request/terminate
           method: post
           cors: true
           authorizer:
@@ -243,6 +261,9 @@ functions:
             authorizerId:
               Ref: ApiGatewayAuthorizer
   
+  TerminatePrediction:
+    handler: handlers/predict.terminate_prediction
+
   AutoConfirm:
     handler: handlers/auto_confirm.confirm
 
@@ -269,4 +290,30 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId:
               Ref: ApiGatewayAuthorizer
+
+  NotificationGet:
+    handler: handlers/notify.get_all
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/notification/{userid}
+          method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+          
+  NotificationMarkRead:
+    handler: handlers/notify.mark_read
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/notification/read/{id}
+          method: put
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
               
+  NotificationCreate:
+    handler: handlers/notify.create

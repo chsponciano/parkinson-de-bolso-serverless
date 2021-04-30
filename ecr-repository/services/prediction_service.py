@@ -70,7 +70,6 @@ class PredictionService:
             # save data to the database
             add_to_table(self._predict_table, {
                 'predictid': body['predictid'],
-                'patientid': body['patientid'],
                 'index': body['index'],
                 'image': body['url_image'],
                 'isParkinson': _isParkinson,

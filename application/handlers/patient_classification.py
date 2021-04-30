@@ -2,7 +2,9 @@ import json
 import os
 import uuid
 import boto3
+import time
 
+from datetime import datetime
 from boto3.dynamodb.conditions import Attr
 from util.decimal_encoder import DecimalEncoder
 
@@ -13,8 +15,9 @@ PATIENT_CLASSIFICATION_TABLE = DYNAMODB_RESOURCE.Table(os.environ['PATIENT_CLASS
 class PatientClassificationModel:
     def __init__(self, data):
         self.patientid = data['patientid']
+        self.executationid = data['executationid']
         self.percentage = data['percentage']
-        self.date = data['date']
+        self.isParkinson = data['isParkinson']
         
 def get_all(event, context):
     _patientsClassifications = PATIENT_CLASSIFICATION_TABLE.scan(
@@ -35,34 +38,17 @@ def delete(event, context):
         'statusCode': 200
     }
 
-def create(event, context):    
+def create(event, context):  
+    _timestamp = str(time.time())  
     _patientsClassifications = PatientClassificationModel(json.loads(event['body'])).__dict__
     _patientsClassifications['id'] = str(uuid.uuid1())
-    _patientsClassifications['percentage'] = _group_daily_data(_patientsClassifications)
+    _patientsClassifications['date'] = str(datetime.date(datetime.now()))
+    _patientsClassifications['createdAt'] = _timestamp
+    _patientsClassifications['updatedAt'] = _timestamp
+
     PATIENT_CLASSIFICATION_TABLE.put_item(Item=_patientsClassifications)
 
     return {
         'statusCode': 200,
         'body': json.dumps(_patientsClassifications)
     }
-
-def _group_daily_data(patientsClassification):
-    _percentage = float(patientsClassification['percentage'])
-    _classifications = PATIENT_CLASSIFICATION_TABLE.scan(
-        FilterExpression=Attr('patientid').eq(patientsClassification['patientid']) & Attr('date').eq(patientsClassification['date'])
-    )['Items']
-
-    if len(_classifications) == 0:
-        return int(_percentage)
-    
-    for c in _classifications:
-        _percentage += float(c['percentage'])
-        PATIENT_CLASSIFICATION_TABLE.delete_item(
-            Key={
-                'id': c['id']
-            }
-        )
-
-    _percentage /= len(_classifications) + 1
-
-    return int(_percentage)

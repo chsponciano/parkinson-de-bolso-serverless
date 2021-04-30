@@ -13,6 +13,7 @@ K.set_image_data_format('channels_last')
 from utils.sqs_utils import SQSProducer
 from pixellib.instance import instance_segmentation
 from utils.file_utils import download_image, add_collection_image, delete_standby_image, delete_local_tmp_imagem
+from utils.lambda_utils import invoke_prediction_termination
 
 
 class SegmentationService:
@@ -47,41 +48,46 @@ class SegmentationService:
 
         # converting from string to map
         body = json.loads(body)
-        wait_url = body['url_image']
 
         try:
-            # download s3 image
-            _file_path = download_image(wait_url)  
-            body['local_image'] = _file_path
+            if 'conclude' in body:
+                invoke_prediction_termination(body['conclude'], body['patiendid'], body['userid'])
+            else:
+                # get url image in s3
+                wait_url = body['url_image']
 
-            # load segmentation model
-            _instance_segmentation = self._load_segmentation_model()
+                # download s3 image
+                _file_path = download_image(wait_url)  
+                body['local_image'] = _file_path
 
-            # creates the segmentation target
-            _target_classes = _instance_segmentation.select_target_classes(person=True)
+                # load segmentation model
+                _instance_segmentation = self._load_segmentation_model()
 
-            # target person in the image
-            _mask, _ = _instance_segmentation.segmentImage(
-                _file_path, 
-                segment_target_classes=_target_classes, 
-                extract_segmented_objects=True
-            )
+                # creates the segmentation target
+                _target_classes = _instance_segmentation.select_target_classes(person=True)
 
-            # convert targeting values ​​to integer
-            _mask = _mask['masks'].astype(int)
+                # target person in the image
+                _mask, _ = _instance_segmentation.segmentImage(
+                    _file_path, 
+                    segment_target_classes=_target_classes, 
+                    extract_segmented_objects=True
+                )
 
-            # get silhouette of the person in the image and
-            # save the new image in the local folder
-            cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
+                # convert targeting values ​​to integer
+                _mask = _mask['masks'].astype(int)
 
-            # saves the segmented image on s3
-            body['url_image'] = add_collection_image(_file_path)
+                # get silhouette of the person in the image and
+                # save the new image in the local folder
+                cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
 
-            # posts a message to the prediction queue with the 
-            # local directory of the segmented image
-            # Conditional: will not post the message when the flag isCollection is true
-            if not body['isCollection']:
-                self._produce_prediction.run(body)
+                # saves the segmented image on s3
+                body['url_image'] = add_collection_image(_file_path)
+
+                # posts a message to the prediction queue with the 
+                # local directory of the segmented image
+                # Conditional: will not post the message when the flag isCollection is true
+                if not body['isCollection']:
+                    self._produce_prediction.run(body)
                 
         except Exception as e:
             if 'local_image' in body and os.path.exists(body['local_image']):
