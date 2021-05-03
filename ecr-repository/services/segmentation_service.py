@@ -54,48 +54,52 @@ class SegmentationService:
             wait_url = body['url_image']
 
         try:
-            if 'conclude' in body:
-                invoke_prediction_termination(body['conclude'], body['patiendid'], body['userid'])
-            else:
+            if not body['isCollection']:
+                print('oi')
+                self._produce_prediction.run(body)
 
-                # download s3 image
-                _file_path = download_image(wait_url)  
-                body['local_image'] = _file_path
+            # if 'conclude' in body:
+            #     invoke_prediction_termination(body['conclude'], body['patiendid'], body['userid'])
+            # else:
 
-                # load segmentation model
-                try:
-                    _instance_segmentation = self._load_segmentation_model()
-                except:
-                    return None
+            #     # download s3 image
+            #     _file_path = download_image(wait_url)  
+            #     body['local_image'] = _file_path
 
-                # creates the segmentation target
-                _target_classes = _instance_segmentation.select_target_classes(person=True)
+            #     # load segmentation model
+            #     try:
+            #         _instance_segmentation = self._load_segmentation_model()
+            #     except:
+            #         return None
 
-                # target person in the image
-                _mask, _ = _instance_segmentation.segmentImage(
-                    _file_path, 
-                    segment_target_classes=_target_classes, 
-                    extract_segmented_objects=True
-                )
+            #     # creates the segmentation target
+            #     _target_classes = _instance_segmentation.select_target_classes(person=True)
 
-                # convert targeting values ​​to integer
-                _mask = _mask['masks'].astype(int)
+            #     # target person in the image
+            #     _mask, _ = _instance_segmentation.segmentImage(
+            #         _file_path, 
+            #         segment_target_classes=_target_classes, 
+            #         extract_segmented_objects=True
+            #     )
 
-                # get silhouette of the person in the image and
-                # save the new image in the local folder
-                cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
+            #     # convert targeting values ​​to integer
+            #     _mask = _mask['masks'].astype(int)
 
-                # saves the segmented image on s3
-                body['url_image'] = add_collection_image(_file_path)
+            #     # get silhouette of the person in the image and
+            #     # save the new image in the local folder
+            #     cv2.imwrite(_file_path, self._get_silhouette(_mask, _file_path))
 
-                # posts a message to the prediction queue with the 
-                # local directory of the segmented image
-                # Conditional: will not post the message when the flag isCollection is true
+            #     # saves the segmented image on s3
+            #     body['url_image'] = add_collection_image(_file_path)
 
-                print('Is Collection: ',  body['isCollection'])
+            #     # posts a message to the prediction queue with the 
+            #     # local directory of the segmented image
+            #     # Conditional: will not post the message when the flag isCollection is true
 
-                if not body['isCollection']:
-                    self._produce_prediction.run(body)
+            #     print('Is Collection: ',  body['isCollection'])
+
+            #     if not body['isCollection']:
+            #         self._produce_prediction.run(body)
                 
         except Exception as e:
             if 'local_image' in body and os.path.exists(body['local_image']):
@@ -107,7 +111,8 @@ class SegmentationService:
             K.clear_session()
             del _instance_segmentation
             gc.collect()
-            delete_standby_image(wait_url)
+            if wait_url is not None:
+                delete_standby_image(wait_url)
             time.sleep(5)
 
         return body
