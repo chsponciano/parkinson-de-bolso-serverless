@@ -61,7 +61,10 @@ class SegmentationService:
                 body['local_image'] = _file_path
 
                 # load segmentation model
-                _instance_segmentation = self._load_segmentation_model()
+                try:
+                    _instance_segmentation = self._load_segmentation_model()
+                except:
+                    return None
 
                 # creates the segmentation target
                 _target_classes = _instance_segmentation.select_target_classes(person=True)
@@ -100,6 +103,6 @@ class SegmentationService:
             del _instance_segmentation
             gc.collect()
             delete_standby_image(wait_url)
-            time.sleep(2)
+            time.sleep(5)
 
         return body
