@@ -16,7 +16,7 @@ class SQSProducer:
         self._sqs_client = boto3.client('sqs', region_name=self._region)
 
     def run(self, message):
-        print('[%s] message posting' % (time.ctime(time.time())))
+        print('[%s][%s] message posting - Queue: %s' % (time.ctime(time.time()), self._region, self._queue_url))
         _id = uuid.uuid4().hex
         return self._sqs_client.send_message(
             QueueUrl=self._queue_url,
