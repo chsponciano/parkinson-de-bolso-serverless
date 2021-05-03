@@ -48,13 +48,15 @@ class SegmentationService:
 
         # converting from string to map
         body = json.loads(body)
+        
+        # get url image in s3        
+        if 'url_image' in body:
+            wait_url = body['url_image']
 
         try:
             if 'conclude' in body:
                 invoke_prediction_termination(body['conclude'], body['patiendid'], body['userid'])
             else:
-                # get url image in s3
-                wait_url = body['url_image']
 
                 # download s3 image
                 _file_path = download_image(wait_url)  
@@ -89,6 +91,9 @@ class SegmentationService:
                 # posts a message to the prediction queue with the 
                 # local directory of the segmented image
                 # Conditional: will not post the message when the flag isCollection is true
+
+                print('Is Collection: ',  body['isCollection'])
+
                 if not body['isCollection']:
                     self._produce_prediction.run(body)
                 
