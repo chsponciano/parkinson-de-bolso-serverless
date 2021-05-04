@@ -74,7 +74,7 @@ def request_terminate_prediction(event, context):
     }
 
 def terminate_prediction(event, context):
-    _data = json.loads(event['body'])
+    _data = json.loads(json.dumps(event['body']))
     _id = _data['predictid']
     _percentage_parkinson, _percentage_others = _get_percentages(_id)
     _percentage, _is_parkinson = (_percentage_parkinson, 1) if _percentage_parkinson > _percentage_others else (_percentage_others, 0)
