@@ -40,7 +40,7 @@ def delete(event, context):
 
 def create(event, context):  
     _timestamp = str(time.time())  
-    _patientsClassifications = PatientClassificationModel(json.loads(event['body'])).__dict__
+    _patientsClassifications = PatientClassificationModel(json.loads(json.dumps(event['body']))).__dict__
     _patientsClassifications['id'] = str(uuid.uuid1())
     _patientsClassifications['date'] = str(datetime.date(datetime.now()))
     _patientsClassifications['createdAt'] = _timestamp

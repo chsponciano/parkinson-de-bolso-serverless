@@ -21,7 +21,8 @@ provider:
             - dynamodb:*
             - ses:SendEmail
             - sqs:*
-            - lambda:*
+            - lambda:InvokeFunction
+            - lambda:InvokeAsync
         Resource: '*'
 
 resources:
@@ -263,6 +264,15 @@ functions:
   
   TerminatePrediction:
     handler: handlers/predict.terminate_prediction
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/predict/terminate
+          method: post
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
 
   AutoConfirm:
     handler: handlers/auto_confirm.confirm
