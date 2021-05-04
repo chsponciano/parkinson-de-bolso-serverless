@@ -52,7 +52,7 @@ class SegmentationService:
 
         try:
             if 'conclude' in body:
-                invoke_prediction_termination(body['conclude'], body['patiendid'], body['userid'])
+                invoke_prediction_termination(body)
             else:
                 # get url image in s3
                 _wait_url = body['url_image']
