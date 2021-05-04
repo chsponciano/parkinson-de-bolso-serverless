@@ -43,23 +43,22 @@ class SegmentationService:
         return _segmented_img
 
     def run(self, body):
-        # initialize the segmentation instance
+        # initialize variables
         _instance_segmentation = None
+        _wait_url = None
 
         # converting from string to map
         body = json.loads(body)
-        
-        # get url image in s3        
-        if 'url_image' in body:
-            wait_url = body['url_image']
 
         try:
             if 'conclude' in body:
                 invoke_prediction_termination(body['conclude'], body['patiendid'], body['userid'])
             else:
+                # get url image in s3
+                _wait_url = body['url_image']
 
                 # download s3 image
-                _file_path = download_image(wait_url)  
+                _file_path = download_image(_wait_url)  
                 body['local_image'] = _file_path
 
                 # load segmentation model
@@ -91,9 +90,6 @@ class SegmentationService:
                 # posts a message to the prediction queue with the 
                 # local directory of the segmented image
                 # Conditional: will not post the message when the flag isCollection is true
-
-                print('Is Collection: ',  body['isCollection'])
-
                 if not body['isCollection']:
                     self._produce_prediction.run(body)
                 
@@ -107,8 +103,8 @@ class SegmentationService:
             K.clear_session()
             del _instance_segmentation
             gc.collect()
-            if wait_url is not None:
-                delete_standby_image(wait_url)
+            if _wait_url is not None:
+                delete_standby_image(_wait_url)
             time.sleep(5)
 
         return body
