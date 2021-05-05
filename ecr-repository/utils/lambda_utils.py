@@ -11,7 +11,7 @@ def invoke_prediction_termination(data, invocation_type='RequestResponse'):
     data['predictid'] = data['conclude']
     del data['conclude']
 
-    _response = LAMBDA_CLIENT.invoke(
+    response = LAMBDA_CLIENT.invoke(
         FunctionName=f'{DEFAULT_NAME}-TerminatePrediction', 
         InvocationType=invocation_type, 
         Payload=bytes(json.dumps({
@@ -19,6 +19,6 @@ def invoke_prediction_termination(data, invocation_type='RequestResponse'):
         }), encoding='utf8')
     )
 
-    _response = json.loads(response['Payload'].read().decode('utf-8'))
-    print('[%s] Invoke prediction termination - Response: %s' % (time.ctime(time.time()), _response))
-    return _response
+    response = json.loads(response['Payload'].read().decode('utf-8'))
+    print('[%s] Invoke prediction termination - Response: %s' % (time.ctime(time.time()), response))
+    return response
