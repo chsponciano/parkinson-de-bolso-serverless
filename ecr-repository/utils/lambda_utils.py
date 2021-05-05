@@ -20,5 +20,5 @@ def invoke_prediction_termination(data, invocation_type='RequestResponse'):
     )
 
     _response = json.loads(response['Payload'].read().decode('utf-8'))
-    print('[%s] invoke prediction termination - Response: %s' % (time.ctime(time.time()), _response))
+    print('[%s] Invoke prediction termination - Response: %s' % (time.ctime(time.time()), _response))
     return _response
