@@ -7,6 +7,7 @@ import boto3
 
 from boto3.dynamodb.conditions import Attr
 from util import file_control, lambda_utils
+from util.decimal_encoder import DecimalEncoder
 
 
 SQS_CLIENT = boto3.client('sqs')
@@ -47,12 +48,12 @@ def _get_percentages(predict_id):
 
 def get_all_by_id(event, context):
     _executationClassifications = EXECUTATION_CLASSIFICATION_TABLE.scan(
-        FilterExpression=Attr('predictid').eq(event['pathParameters']['predictid'])
+        FilterExpression=Attr('predictid').eq(event['pathParameters']['id'])
     )
 
     return {
         'statusCode': 200,
-        'body': json.dumps(_executationClassifications, cls=DecimalEncoder)
+        'body': json.dumps(_executationClassifications['Items'], cls=DecimalEncoder)
     }
 
 def create_predict_id(event, context):
