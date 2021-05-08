@@ -42,6 +42,18 @@ def get_all(event, context):
         'body': json.dumps(_patiens['Items'], cls=DecimalEncoder)
     }
 
+def get_patient_name(event, context):
+    _data = json.loads(json.dumps(event['body']))
+    _patientid = _data['patientid']
+
+    _patient = PATIENT_TABLE.get_item(
+        Key={
+            'id': _patientid
+        }
+    )
+
+    return  _patient['Item']['fullname']
+
 def create(event, context):
     _timestamp = str(time.time())
     _patient = PatientModel(json.loads(event['body'])).__dict__

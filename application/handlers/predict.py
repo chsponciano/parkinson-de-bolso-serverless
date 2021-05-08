@@ -15,7 +15,8 @@ DYNAMODB_RESOURCE = boto3.resource('dynamodb')
 EXECUTATION_CLASSIFICATION_TABLE = DYNAMODB_RESOURCE.Table(os.environ['EXECUTATION_CLASSIFICATION_TABLE'])
 DEFAULT_QUEUE = os.environ['SEGMENTATION_QUEUE_URL']
 DEFAULT_NOTIFICATION_TITLE = 'Resultado da analise das imagens'
-DEFAULT_NOTIFICATION_MESSAGE = 'Com base nas imagens recebidas, concluímos o paciente tem {percentage:.5f}% de{conclusion} possuir a doença de Parkinson'
+DEFAULT_NOTIFICATION_MESSAGE = 'Com base nas imagens recebidas, concluímos que o paciente {patient} tem {percentage:.5f}% de{conclusion} possuir a doença de Parkinson'
+DEFAULT_NOTIFICATION_MESSAGE_NO_RESULTS = 'Com base nas imagens recebidas, não identificamos o paciente {patient} nas imagens! Favor repetir o procedimento.'
 
 def _add_message_to_queue(data):
     _id = uuid.uuid4().hex
@@ -106,38 +107,58 @@ def request_terminate_prediction(event, context):
 def terminate_prediction(event, context):
     _data = json.loads(json.dumps(event['body']))
     _id = _data['predictid']
-    _percentage_parkinson, _percentage_others = _get_percentages(_id)
-    _percentage, _is_parkinson = (_percentage_parkinson, 1) if _percentage_parkinson > _percentage_others else (_percentage_others, 0)
 
-    _classification = lambda_utils.invoke('PatientClassificationCreate', {
+    _percentage_parkinson, _percentage_others = _get_percentages(_id)
+
+    _patientName = lambda_utils.invoke('PatientGetName', {
         'patientid': _data['patientid'],
-        'executationid': _id,
-        'percentage': str(_percentage),
-        'isParkinson': _is_parkinson
     })
 
-    if ('statusCode' in _classification and _classification['statusCode'] == 200):
-        _conclusion = '' if _is_parkinson else ' não'
-
+    if _percentage_parkinson == _percentage_others == 0:
         _notification_data = {
             'title': DEFAULT_NOTIFICATION_TITLE,
-            'body': DEFAULT_NOTIFICATION_MESSAGE.format(
-                percentage=_percentage,
-                conclusion=_conclusion
+            'body': DEFAULT_NOTIFICATION_MESSAGE_NO_RESULTS.format(
+                patient=_patientName
             ),
             'userid': _data['userid'],
-            'additional': _id,
-            'payload': 'classification'
+            'additional': None,
+            'payload': 'alert'
         }
 
         lambda_utils.invoke('NotificationCreate', _notification_data)
 
-        return {
-            'statusCode': 200,
-            'body': json.dumps(_classification)
-        }
     else:
-        return {
-            'statusCode': 500,
-            'error': 'it was not possible to create the final classification'
-        }
+        _percentage, _is_parkinson = (_percentage_parkinson, 1) if _percentage_parkinson > _percentage_others else (_percentage_others, 0)
+
+        _classification = lambda_utils.invoke('PatientClassificationCreate', {
+            'patientid': _data['patientid'],
+            'executationid': _id,
+            'percentage': str(_percentage),
+            'isParkinson': _is_parkinson
+        })
+
+        if ('statusCode' in _classification and _classification['statusCode'] == 200):
+            _conclusion = '' if _is_parkinson else ' não'
+
+            _notification_data = {
+                'title': DEFAULT_NOTIFICATION_TITLE,
+                'body': DEFAULT_NOTIFICATION_MESSAGE.format(
+                    patient=_patientName,
+                    percentage=_percentage,
+                    conclusion=_conclusion
+                ),
+                'userid': _data['userid'],
+                'additional': _id,
+                'payload': 'classification'
+            }
+
+            lambda_utils.invoke('NotificationCreate', _notification_data)
+        else:
+            return {
+                'statusCode': 500,
+                'error': 'it was not possible to create the final classification'
+            }
+            
+    return {
+        'statusCode': 200
+    }
