@@ -8,6 +8,7 @@
 		"bucketName": "parkinson-de-bolso-bucket",
 		"applicationEmail": "parkinsondebolso@gmail.com",
 		"devEmail": "chs.ponciano@gmail.com",
-		"segmentationQueueUrl": "https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-segmentation-queue.fifo"
+		"segmentationQueueUrl": "https://sqs.sa-east-1.amazonaws.com/206354660150/pocket-parkinson-segmentation-queue.fifo",
+		"userPoolId": "sa-east-1_gvEOZyzcH"
 	}
 }

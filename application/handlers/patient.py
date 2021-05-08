@@ -6,7 +6,7 @@ import boto3
 
 from boto3.dynamodb.conditions import Attr
 from util.decimal_encoder import DecimalEncoder
-from util import update_parameters, file_control
+from util import update_parameters, file_control, lambda_utils
 from handlers import patient_classification
 
 DYNAMODB_RESOURCE = boto3.resource('dynamodb')
@@ -84,19 +84,40 @@ def put(event, context):
 
 def delete(event, context):
     _id = event['pathParameters']['id']
-    event['pathParameters']['patientid'] = _id
     _delete_patient_file(_id)
-    
-    _classifications = json.loads(patient_classification.get_all(event, context)['body'])
-    for _classfication in _classifications:
-        event['pathParameters']['id'] = _classfication['id']
-        patient_classification.delete(event, context)
     
     PATIENT_TABLE.delete_item(
         Key={
             'id': _id
         }
     )
+    
+    lambda_utils.invoke('PatientClassificationDelete', {
+        'patientid': _id
+    })
+    return {
+        'statusCode': 200
+    }
+
+def delete_all(event, context):
+    _data = json.loads(json.dumps(event['body']))
+    _userid = _data['userid']
+
+    _patiens = PATIENT_TABLE.scan(
+        FilterExpression=Attr('userid').eq(_userid)
+    )
+
+    for patient in _patiens['Items']:
+        PATIENT_TABLE.delete_item(
+            Key={
+                'id': patient['id']
+            }
+        )
+        
+        lambda_utils.invoke('PatientClassificationDelete', {
+            'patientid': patient['id']
+        })
+
     return {
         'statusCode': 200
     }

@@ -9,6 +9,7 @@ from datetime import datetime
 from operator import itemgetter
 from boto3.dynamodb.conditions import Attr
 from util.decimal_encoder import DecimalEncoder
+from util import lambda_utils
 
 
 DYNAMODB_RESOURCE = boto3.resource('dynamodb')
@@ -46,11 +47,24 @@ def get_all(event, context):
     }
 
 def delete(event, context):
-    PATIENT_CLASSIFICATION_TABLE.delete_item(
-        Key={
-            'id': event['pathParameters']['id']
-        }
+    _data = json.loads(json.dumps(event['body']))
+    _patientid = _data['patientid']
+
+    _patientsClassifications = PATIENT_CLASSIFICATION_TABLE.scan(
+        FilterExpression=Attr('patientid').eq(_patientid)
     )
+
+    for classfication in _patientsClassifications['Items']:
+        PATIENT_CLASSIFICATION_TABLE.delete_item(
+            Key={
+                'id': classfication['id']
+            }
+        )
+        
+        lambda_utils.invoke('ExecutationDelete', {
+            'predictid': classfication['executationid']
+        })
+
     return {
         'statusCode': 200
     }

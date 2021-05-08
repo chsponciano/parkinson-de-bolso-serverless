@@ -1,21 +1,27 @@
 import json
 import os
+import boto3
 
-from handlers import patient, patient_classification
+from util import lambda_utils
 
+COGNITO_CLIENT = boto3.client('cognito-idp')
 
 def clean_data(event, context):
-    _patients = json.loads(patient.get_all(event, context)['body'])
-    for _patient in _patients:
-        event['pathParameters']['patientid'] = _patient['id']
-        
-        _classifications = json.loads(patient_classification.get_all(event, context)['body'])
-        for _classification in _classifications:
-            event['pathParameters']['id'] = _classification['id']
-            patient_classification.delete(event, context)
+    _userid = event['pathParameters']['userid']
+    lambda_utils.invoke('PatientDeleteAll', {
+        'userid': _userid
+    })
+    return {
+        'statusCode': 200
+    }
 
-        event['pathParameters']['id'] = _patient['id']
-        patient.delete(event, context)
+def delete_user(event, context):
+    clean_data(event, context)
+
+    COGNITO_CLIENT.admin_delete_user(
+        UserPoolId=os.environ['USER_POOL_ID'],
+        Username=event['pathParameters']['userid']
+    )
     
     return {
         'statusCode': 200

@@ -56,6 +56,25 @@ def get_all_by_id(event, context):
         'body': json.dumps(_executationClassifications['Items'], cls=DecimalEncoder)
     }
 
+def delete_data(event, context):
+    _data = json.loads(json.dumps(event['body']))
+    _predictid = _data['predictid']
+
+    _executationClassifications = EXECUTATION_CLASSIFICATION_TABLE.scan(
+        FilterExpression=Attr('predictid').eq(_predictid)
+    )
+
+    for executation in _executationClassifications['Items']:
+        EXECUTATION_CLASSIFICATION_TABLE.delete_item(
+            Key={
+                'id': executation['id']
+            }
+        )
+
+    return {
+        'statusCode': 200
+    }
+
 def create_predict_id(event, context):
     return {
         'statusCode': 200,

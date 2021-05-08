@@ -13,7 +13,8 @@ provider:
       NOTIFICATION_TABLE: ${self:service}-notification
       APPLICATION_EMAIL: ${file(./config.json):deployment.applicationEmail}
       DEV_EMAIL: ${file(./config.json):deployment.devEmail}
-      SEGMENTATION_QUEUE_URL: ${file(./config.json):deployment.segmentationQueueUrl} 
+      SEGMENTATION_QUEUE_URL: ${file(./config.json):deployment.segmentationQueueUrl}
+      USER_POOL_ID: ${file(./config.json):deployment.userPoolId} 
   iamRoleStatements:
       - Effect: Allow
         Action:
@@ -23,6 +24,7 @@ provider:
             - sqs:*
             - lambda:InvokeFunction
             - lambda:InvokeAsync
+            - cognito-idp:*
         Resource: '*'
 
 resources:
@@ -204,15 +206,6 @@ functions:
           
   PatientClassificationDelete:
     handler: handlers/patient_classification.delete
-    events:
-      - http:
-          path: ${file(./config.json):deployment.pathApi}/patient_classification/{id}
-          method: delete
-          cors: true
-          authorizer:
-            type: COGNITO_USER_POOLS
-            authorizerId:
-              Ref: ApiGatewayAuthorizer
           
   PatientClassificationCreate:
     handler: handlers/patient_classification.create
@@ -263,7 +256,7 @@ functions:
     handler: handlers/privacy.clean_data
     events:
       - http:
-          path: ${file(./config.json):deployment.pathApi}/privacy/{userid}
+          path: ${file(./config.json):deployment.pathApi}/privacy/clean/{userid}
           method: delete
           cors: true
           authorizer:
@@ -316,6 +309,24 @@ functions:
       - http:
           path: ${file(./config.json):deployment.pathApi}/predict/{id}
           method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+              
+  ExecutationDelete:
+    handler: handlers/predict.delete_data
+
+  PatientDeleteAll:
+    handler: handlers/patient.delete_all
+
+  DeleteUser:
+    handler: handlers/privacy.delete_user
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/privacy/delete/user/{userid}
+          method: delete
           cors: true
           authorizer:
             type: COGNITO_USER_POOLS
