@@ -3,8 +3,10 @@ import os
 import uuid
 import boto3
 import time
+import itertools
 
 from datetime import datetime
+from operator import itemgetter
 from boto3.dynamodb.conditions import Attr
 from util.decimal_encoder import DecimalEncoder
 
@@ -18,14 +20,29 @@ class PatientClassificationModel:
         self.executationid = data['executationid']
         self.percentage = data['percentage']
         self.isParkinson = data['isParkinson']
-        
+
+def group_sort_by_date(stack):
+    sorted_stack = sorted(stack, key=itemgetter('date'))
+    grouped = []
+
+    for key, values in itertools.groupby(sorted_stack, key=lambda x:x['date']):
+        values = list(values)
+        element = values[0]
+        element['percentage'] = sum(float(g['percentage']) for g in values) / len(values)
+        grouped.append(element)
+
+    return grouped
+
 def get_all(event, context):
     _patientsClassifications = PATIENT_CLASSIFICATION_TABLE.scan(
         FilterExpression=Attr('patientid').eq(event['pathParameters']['patientid'])
     )
+
+    _patientsClassifications = group_sort_by_date(_patientsClassifications['Items'])
+
     return {
         'statusCode': 200,
-        'body': json.dumps(_patientsClassifications['Items'], cls=DecimalEncoder)
+        'body': json.dumps(_patientsClassifications, cls=DecimalEncoder)
     }
 
 def delete(event, context):

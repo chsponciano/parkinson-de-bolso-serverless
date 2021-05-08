@@ -37,7 +37,7 @@ def create(event, context):
     _timestamp = str(time.time())
     _notification = NotificationModel(json.loads(json.dumps(event['body']))).__dict__
     _notification['id'] = str(uuid.uuid1())
-    _notification['notificationid'] = str(uuid.uuid4().int & (1 << 64) - 1)
+    _notification['notificationid'] = int(round(time.time() * 1000))
     _notification['createdAt'] = _timestamp
     _notification['updatedAt'] = _timestamp
 

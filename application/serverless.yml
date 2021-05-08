@@ -216,15 +216,6 @@ functions:
           
   PatientClassificationCreate:
     handler: handlers/patient_classification.create
-    events:
-      - http:
-          path: ${file(./config.json):deployment.pathApi}/patient_classification
-          method: post
-          cors: true
-          authorizer:
-            type: COGNITO_USER_POOLS
-            authorizerId:
-              Ref: ApiGatewayAuthorizer
 
   CreatePredictionId:
     handler: handlers/predict.create_predict_id
@@ -264,15 +255,6 @@ functions:
   
   TerminatePrediction:
     handler: handlers/predict.terminate_prediction
-    events:
-      - http:
-          path: ${file(./config.json):deployment.pathApi}/predict/terminate
-          method: post
-          cors: true
-          authorizer:
-            type: COGNITO_USER_POOLS
-            authorizerId:
-              Ref: ApiGatewayAuthorizer
 
   AutoConfirm:
     handler: handlers/auto_confirm.confirm
@@ -327,3 +309,15 @@ functions:
               
   NotificationCreate:
     handler: handlers/notify.create
+    
+  ExecutationGet:
+    handler: handlers/predict.get_all_by_id
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/predict/{id}
+          method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
