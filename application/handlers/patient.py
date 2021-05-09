@@ -7,7 +7,6 @@ import boto3
 from boto3.dynamodb.conditions import Attr
 from util.decimal_encoder import DecimalEncoder
 from util import update_parameters, file_control, lambda_utils
-from handlers import patient_classification
 
 DYNAMODB_RESOURCE = boto3.resource('dynamodb')
 PATIENT_TABLE = DYNAMODB_RESOURCE.Table(os.environ['PATIENT_TABLE'])

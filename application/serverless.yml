@@ -11,6 +11,8 @@ provider:
       PATIENT_CLASSIFICATION_TABLE: ${self:service}-patients-classifications
       EXECUTATION_CLASSIFICATION_TABLE: ${self:service}-executations-classifications
       NOTIFICATION_TABLE: ${self:service}-notification
+      REPORT_TABLE: ${self:service}-report
+      CONFIGURATION_APP_TABLE: ${self:service}-configuration-app
       APPLICATION_EMAIL: ${file(./config.json):deployment.applicationEmail}
       DEV_EMAIL: ${file(./config.json):deployment.devEmail}
       SEGMENTATION_QUEUE_URL: ${file(./config.json):deployment.segmentationQueueUrl}
@@ -121,6 +123,36 @@ resources:
       DeletionPolicy: Retain
       Properties:
         TableName: ${self:provider.environment.NOTIFICATION_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5  
+
+    ReportTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.REPORT_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5   
+
+    ConfigurationAppTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.CONFIGURATION_APP_TABLE}
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -335,3 +367,23 @@ functions:
 
   PatientGetName:
     handler: handlers/patient.get_patient_name
+    
+  ReportGetAll:
+    handler: handlers/report.get_all
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/report
+          method: get
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+    
+  ConifgGetAll:
+    handler: handlers/configuration.get_all
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/configuration
+          method: get
+          cors: true
