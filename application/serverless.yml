@@ -387,3 +387,15 @@ functions:
           path: ${file(./config.json):deployment.pathApi}/configuration
           method: get
           cors: true
+    
+  ReportGetData:
+    handler: handlers/report.get_data
+    events:
+      - http:
+          path: ${file(./config.json):deployment.pathApi}/report/data
+          method: post
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
