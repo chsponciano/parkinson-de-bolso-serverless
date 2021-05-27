@@ -96,7 +96,9 @@ def send_comment(event, context):
 
         return {
             'statusCode': 200,
-            'response': str(response)
+            'body': json.dumps({
+                'response': response
+            })
         }
     except Exception as e:
         return {

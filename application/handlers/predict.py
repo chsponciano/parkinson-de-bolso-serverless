@@ -9,7 +9,7 @@ from boto3.dynamodb.conditions import Attr
 from util import file_control, lambda_utils
 from util.decimal_encoder import DecimalEncoder
 
-
+EC2_CLIENT = boto3.client('ec2')
 SQS_CLIENT = boto3.client('sqs')
 DYNAMODB_RESOURCE = boto3.resource('dynamodb')
 EXECUTATION_CLASSIFICATION_TABLE = DYNAMODB_RESOURCE.Table(os.environ['EXECUTATION_CLASSIFICATION_TABLE'])
@@ -161,4 +161,18 @@ def terminate_prediction(event, context):
             
     return {
         'statusCode': 200
+    }
+
+def machine_status(event, context):
+    _instances = EC2_CLIENT.describe_instance_status(IncludeAllInstances=True)
+    _active = 1
+
+    for instance in _instances['InstanceStatuses']:
+        _active = 1 if instance['InstanceState']['Code'] == 16 and _active == 1 else 0
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+            'active': _active
+        })
     }
