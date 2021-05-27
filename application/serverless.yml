@@ -412,3 +412,6 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId:
               Ref: ApiGatewayAuthorizer
+
+  NotifyNewUser:
+    handler: handlers/notify.new_user

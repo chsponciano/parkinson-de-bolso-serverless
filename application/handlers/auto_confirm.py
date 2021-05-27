@@ -1,3 +1,8 @@
+import json
+
+from util import lambda_utils
+
+
 def confirm(event, context):
     event['response']['autoConfirmUser'] = True
 
@@ -6,6 +11,8 @@ def confirm(event, context):
 
     if 'phone_number' in event['request']['userAttributes']:
         event['response']['autoVerifyPhone'] = True
+
+    lambda_utils.invoke('NotifyNewUser', event)
 
     return event
     

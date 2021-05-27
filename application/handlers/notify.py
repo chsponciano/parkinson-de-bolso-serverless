@@ -11,6 +11,7 @@ from util import update_parameters
 SENDER = os.environ['APPLICATION_EMAIL']
 DEV_EMAIL = os.environ['DEV_EMAIL']
 CHARSET = 'UTF-8'
+SES_CLIENT = boto3.client('ses')
 DYNAMODB_RESOURCE = boto3.resource('dynamodb')
 NOTIFICATION_TABLE = DYNAMODB_RESOURCE.Table(os.environ['NOTIFICATION_TABLE'])
 
@@ -69,31 +70,9 @@ def mark_read(event, context):
     }
 
 def send_comment(event, context):
-    _data = json.loads(event['body'])
-    _client = boto3.client('ses')
-
     try:
-        response = _client.send_email(
-            Destination={
-                'ToAddresses': [
-                    DEV_EMAIL,
-                ],
-            },
-            Message={
-                'Body': {
-                    'Text': {
-                        'Charset': CHARSET,
-                        'Data': _data['comment'],
-                    },
-                },
-                'Subject': {
-                    'Charset': CHARSET,
-                    'Data': 'Parkinson de Bolso - Comentário de usuário',
-                },
-            },
-            Source=SENDER,
-        )
-
+        _data = json.loads(event['body'])
+        response = _send_email('Parkinson de Bolso - Comentário de usuário', _data['comment'])
         return {
             'statusCode': 200,
             'body': json.dumps({
@@ -105,3 +84,45 @@ def send_comment(event, context):
             'statusCode': 502,
             'error': str(e)
         }
+
+def new_user(event, context):
+    try:
+        _data = json.loads(json.dumps(event['body']))
+        _message = 'ID: ' + _data['userName'] + '\n'
+        _message += 'Nome: ' + _data['request']['userAttributes']['name'] + '\n'
+        _message += 'Email: ' + _data['request']['userAttributes']['email']
+
+        response = _send_email('Parkinson de Bolso - Novo usuário', _message)
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'response': response
+            })
+        }
+    except Exception as e:
+        return {
+            'statusCode': 502,
+            'error': str(e)
+        }
+
+def _send_email(subject, message):
+    return SES_CLIENT.send_email(
+        Destination={
+            'ToAddresses': [
+                DEV_EMAIL,
+            ],
+        },
+        Message={
+            'Body': {
+                'Text': {
+                    'Charset': CHARSET,
+                    'Data': message,
+                },
+            },
+            'Subject': {
+                'Charset': CHARSET,
+                'Data': subject,
+            },
+        },
+        Source=SENDER,
+    )
