@@ -81,6 +81,7 @@ def lambda_handler(event, context):
             os.remove(_file_path)
             return {
                 'statusCode': 200,
-                'error': None,
-                'url': _url
+                'body': json.dumps({
+                    'url': _url
+                })
             }
