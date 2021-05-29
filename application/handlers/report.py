@@ -4,9 +4,9 @@ import boto3
 
 from boto3.dynamodb.conditions import Attr
 from util.decimal_encoder import DecimalEncoder
+from util.lambda_utils import invoke
 
 DYNAMODB_RESOURCE = boto3.resource('dynamodb')
-DYNAMODB_CLIENT = boto3.client('dynamodb')
 REPORT_TABLE = DYNAMODB_RESOURCE.Table(os.environ['REPORT_TABLE'])
 
 class ReportModel:
@@ -19,6 +19,7 @@ class ReportModel:
         self.tableName = str(data['TableName'])
         self.titles = str(data['titles'])
         self.additional = json.loads(json.dumps(data['additional'])) if 'additional' in data else None
+        self.userid = data['userid']
 
 def get_all(event, context):
     return {
@@ -29,25 +30,16 @@ def get_all(event, context):
     }
 
 def get_data(event, context):
-    _report = ReportModel(json.loads(event['body'])).__dict__
-    _report_data = DYNAMODB_CLIENT.scan(
-        FilterExpression=_replace_parameters(_report),
-        ProjectionExpression=_report.projectionExpression,
-        TableName=_report.tableName
+    _report = ReportModel(json.loads(event['body']))
+    
+    _report_data = DYNAMODB_RESOURCE.Table(_report.tableName).scan(
+        FilterExpression=Attr(_report.filterExpression).eq(_report.additional[_report.filterExpression]),
+        ProjectionExpression=_report.projectionExpression
     )
-    return {
-        'statusCode': 200,
-        'body': json.dumps(_report_data['Items'], cls=DecimalEncoder)
-    }
 
-def _replace_parameters(report):
-    _filterExpression = report.filterExpression
-
-    while '#' in _filterExpression:
-        _start = _filterExpression.index('#')
-        _end = _filterExpression.index('#', _start + 1) + 1
-        _key = _filterExpression[_start:_end]
-        _filterExpression =_filterExpression.replace(_key, str(report.additional[_key.replace('#', '')]))
-
-    report.filterExpression = _filterExpression
-    return report
+    return invoke('GeneratePdf', {
+        'userid': _report.userid,
+        'title': _report.name,
+        'items': _report_data['Items']
+    })
+        
